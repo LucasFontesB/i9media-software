@@ -67,3 +67,16 @@
 	cursor: pointer;
 	font-weight: bold;
 }
+
+.menu_superior_dashboard{
+	background-color: #FF8000;
+}
+
+.menu_usuario_dashboard{
+	background-color: white;
+	border-radius: 20px;
+	border: 0.5px solid black;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	margin-left: 20px;
+}
