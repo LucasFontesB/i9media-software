@@ -1,0 +1,69 @@
+@import url('./main-layout.css');
+
+.layout_login{
+	background-color: white;
+	border-radius: 30px;
+	margin-top: 30px;
+	margin-bottom: 30px;
+	border: 1px solid black;
+	box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.6);
+}
+
+.loginButton{
+	background-color: #FFAE00;
+	margin-top: 60px;
+	border-radius: 20px;
+	color: white;
+	border: 0.5px solid black;
+	border-color: black;
+}
+
+.loginButton:Hover{
+	background-color: #EEA300;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.esqueci_senha{
+	text-decoration: underline;
+}
+
+.esqueci_senha:Hover{
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.msglayout{
+	background-color: white;
+	border: 1px solid black;
+	border-radius: 30px;
+	box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.6);
+}
+
+.msg{
+	text-align: center;
+	font-size: 40px;
+}
+
+.voltar_botao_esqueci_senha{
+	background-color: #FFAE00;
+	margin-top: 40px;
+	border-radius: 20px;
+	color: white;
+	border: 0.5px solid black;
+}
+
+.voltar_botao_esqueci_senha:Hover{
+	background-color: #EEA300;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.okbuttonbox{
+	border: 0.5px solid black;
+}
+
+.okbuttonbox:Hover{
+	cursor: pointer;
+	font-weight: bold;
+}
