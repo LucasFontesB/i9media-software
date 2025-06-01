@@ -8,6 +8,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.i9media.CaixaMensagem;
 import com.i9media.ValidarLogin;
+import com.i9media.models.Usuario;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -19,6 +20,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.i9media.NavegadorDashboards;
 
 @PageTitle("I9Media - Login")
 @Route("login")
@@ -85,8 +87,9 @@ public class LoginView extends HorizontalLayout {
 			
 			Integer verificacao = ValidarLogin.Validar(nome, senha);
 			if (verificacao != null){
-				VaadinSession.getCurrent().setAttribute("idUsuario", verificacao);
-				UI.getCurrent().navigate("dashboard");
+				Usuario usuario = Usuario.Iniciar_Usuario(verificacao);
+				VaadinSession.getCurrent().setAttribute("usuario", usuario);
+				NavegadorDashboards.redirecionar(usuario);
 			}
 		});
 

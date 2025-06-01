@@ -25,7 +25,7 @@ public class ValidarLogin {
 		           if(resultado.next()) {
 		        	   return resultado.getInt("id");
 		           }else {
-		        	   CaixaMensagem.info_box("Erro Login", "Erro Ao Buscar Usuário");
+		        	   CaixaMensagem.info_box("Erro Login", "Usuário Não Cadastrado");
 		        	   return null;
 		           }
 		        } catch (Exception var13) {
