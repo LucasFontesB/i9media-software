@@ -7,7 +7,7 @@ public class NavegadorDashboards {
 
     public static void redirecionar(Usuario usuario) {
         if (usuario == null || usuario.getDepartamento() == null) {
-            UI.getCurrent().navigate("erro-acesso");
+            UI.getCurrent().navigate("acessonegado");
             return;
         }
 

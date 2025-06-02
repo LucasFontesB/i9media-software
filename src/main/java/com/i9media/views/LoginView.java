@@ -21,6 +21,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.i9media.NavegadorDashboards;
+import com.i9media.SessaoUsuario;
 
 @PageTitle("I9Media - Login")
 @Route("login")
@@ -28,7 +29,8 @@ public class LoginView extends HorizontalLayout {
 
     public LoginView() {
         setSizeFull();
-        getStyle().set("background-image", "url('images/login_background.png')");
+        getStyle().set("background-image", "url('images/login_background1.png')");
+        addClassName("loginview");
 
         Div lado_direito = new Div();
         lado_direito.setWidth("40%");
@@ -37,18 +39,10 @@ public class LoginView extends HorizontalLayout {
         lado_esquerdo.setWidth("60%");
         lado_esquerdo.setHeightFull();
 
-        VerticalLayout img_layout = new VerticalLayout();
-        img_layout.setSizeFull();
-        img_layout.setAlignItems(Alignment.CENTER);
-        img_layout.setJustifyContentMode(JustifyContentMode.CENTER);
-        Image logo = new Image("images/logo.png", "Logo da i9Media");
-        logo.setWidth("250px");
-        logo.setHeight("250px");
-        img_layout.add(logo);
-        lado_esquerdo.add(img_layout);
         
         VerticalLayout form_layout = new VerticalLayout();
         form_layout.setWidthFull();
+        form_layout.setHeightFull();
         form_layout.setSpacing(false);
         form_layout.setAlignItems(Alignment.CENTER);
         form_layout.setJustifyContentMode(JustifyContentMode.CENTER);
@@ -88,6 +82,7 @@ public class LoginView extends HorizontalLayout {
 			Integer verificacao = ValidarLogin.Validar(nome, senha);
 			if (verificacao != null){
 				Usuario usuario = Usuario.Iniciar_Usuario(verificacao);
+				SessaoUsuario.login(usuario);
 				VaadinSession.getCurrent().setAttribute("usuario", usuario);
 				NavegadorDashboards.redirecionar(usuario);
 			}

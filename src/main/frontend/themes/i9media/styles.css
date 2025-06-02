@@ -77,3 +77,9 @@
 	border-radius: 20px;
 	border: 0.5px solid black;
 }
+
+.loginview{
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
