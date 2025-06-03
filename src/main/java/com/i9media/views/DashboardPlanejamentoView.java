@@ -8,16 +8,11 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 
-@PageTitle("I9Media - Dashboard Financeiro")
-@Route("dashboard-financeiro")
-public class DashboardFinanceiroView extends Dashboard {
-	
-	public DashboardFinanceiroView() {
-        super();
-    }
+public class DashboardPlanejamentoView extends Dashboard {
+	public DashboardPlanejamentoView() {
+		super();
+	}
 	
 	@Override
 	protected Component construirConteudo() {
@@ -25,16 +20,15 @@ public class DashboardFinanceiroView extends Dashboard {
 		layout.setSizeFull();
 		layout.setAlignItems(Alignment.CENTER);
         layout.setJustifyContentMode(JustifyContentMode.CENTER);
-		H1 titulo = new H1("FINANCEIRO");
+		H1 titulo = new H1("PLANEJAMENTO");
 		
 		Grid<PedidoInsercao> grid = new Grid<>(PedidoInsercao.class);
 		grid.setColumns(
 		    "cliente", "agencia", "executivo", "veiculo", 
-		    "valorLiquidoPiAgencia", "piAgencia", "vencimentoPiAgencia",
-		    "checkingEnviado", "valorRepasseVeiculo", "nfVeiculo", "piI9",
-		    "dataPagamentoVeiculo", "imposto", "bvAgencia", "comissaoVeiculoI9media",
-		    "valorComissaoI9media", "totalLiquido", "midiaResponsavel", "%indicacao",
-		    "valorMidia", "liquidoFinal", "nfI9", "dataDeEmissao"
+		    "valorLiquido", "repasseVeiculo", "midia", 
+		    "%indicacao", "comissaoVeiculo", "valorComissao",
+		    "importo", "bvAgencia", "valorMidia", "totalLiquido",
+		    "liquidoFinal"
 		);
 		grid.getColumns().forEach(coluna -> coluna.setAutoWidth(true));
 		layout.add(titulo, grid);
@@ -44,6 +38,6 @@ public class DashboardFinanceiroView extends Dashboard {
 	
 	@Override
 	protected boolean temPermissao(Usuario user) {
-        return "financeiro".equalsIgnoreCase(user.getDepartamento());
+        return "planejamento".equalsIgnoreCase(user.getDepartamento());
     }
 }
