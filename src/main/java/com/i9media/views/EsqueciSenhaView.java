@@ -59,7 +59,7 @@ public class EsqueciSenhaView extends HorizontalLayout {
         msg_layout.add(msg);
         
         voltar_botao.addClickListener(e -> {
-        	UI.getCurrent().navigate("login");
+        	UI.getCurrent().navigate("");
         });
         
 add(msg_layout);

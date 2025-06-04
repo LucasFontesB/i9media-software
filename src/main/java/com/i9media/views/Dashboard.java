@@ -2,7 +2,9 @@ package com.i9media.views;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -14,6 +16,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.i9media.models.Usuario;
+import com.i9media.Sair;
 
 @PageTitle("I9Media - Dashboard")
 @Route("dashboard")
@@ -43,39 +46,62 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
     }
 
     private Component buildHeader() {
-        HorizontalLayout header = new HorizontalLayout();
+    	HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
+        header.setHeight("64px");
         header.setPadding(true);
+        header.setSpacing(true);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        header.getStyle().set("background-color", "#FF8000");
+        header.setAlignItems(Alignment.CENTER);
+        header.getStyle()
+            .set("background-color", "#F97316")
+            .set("color", "white")
+            .set("position", "fixed")
+            .set("top", "0")
+            .set("left", "0")
+            .set("right", "0")
+            .set("z-index", "100");
 
-        HorizontalLayout menu_usuario = new HorizontalLayout();
-        menu_usuario.setAlignItems(Alignment.START);
-        menu_usuario.setJustifyContentMode(JustifyContentMode.CENTER);
-        menu_usuario.addClassName("menu_usuario_dashboard");
-        menu_usuario.setWidth("250px");
-        menu_usuario.setHeight("100px");
+        HorizontalLayout leftSection = new HorizontalLayout();
+        leftSection.setAlignItems(Alignment.CENTER);
+        leftSection.setSpacing(true);
 
-        Image img = new Image("images/account.png", "Imagem De Conta");
-        img.setWidth("80px");
-        img.setHeight("80px");
+        H1 title = new H1("I9Midia");
+        title.getStyle()
+             .set("font-size", "1.25rem")
+             .set("margin", "0")
+             .set("color", "white");
 
-        VerticalLayout texto_layout = new VerticalLayout();
-        texto_layout.setAlignItems(Alignment.START);
-        texto_layout.setJustifyContentMode(JustifyContentMode.CENTER);
-        texto_layout.setPadding(false);
-        texto_layout.setSpacing(false);
+        Span separator = new Span("|");
+        separator.getStyle().set("color", "white");
 
-        Div bem_vindo_div = new Div(new Span("Bem-vindo,"));
-        Div nome_usuario_div = new Div();
+        Span dashboardInfo = new Span("Departamento "+ user.getDepartamento());
+        dashboardInfo.getStyle().set("color", "white");
 
-        Span nome_usuario = new Span(user != null ? user.getNome() : "Visitante");
-        nome_usuario_div.add(nome_usuario);
+        leftSection.add(title, separator, dashboardInfo);
 
-        texto_layout.add(bem_vindo_div, nome_usuario_div);
-        menu_usuario.add(img, texto_layout);
+        HorizontalLayout rightSection = new HorizontalLayout();
+        rightSection.setAlignItems(Alignment.CENTER);
+        rightSection.setSpacing(true);
+        
+        Image conta_img = new Image("/images/user.png", "Imagem De Usuario");
+        conta_img.setWidth("16px");
+        conta_img.setHeight("16px");
 
-        header.add(menu_usuario);
+        Button welcomeBtn = new Button("Bem-vindo, " + (user != null ? user.getNome() : "Visitante"), conta_img);
+        welcomeBtn.addClassName("bemvindo_botao");
+        
+        
+        Image sair_img = new Image ("/images/logout.png", "Imagem Sair");
+        sair_img.setWidth("16px");
+        sair_img.setHeight("16px");
+
+        Button logoutBtn = new Button("Sair", sair_img, e -> Sair.Sair());
+        logoutBtn.addClassName("logout_botao");
+
+        rightSection.add(welcomeBtn, logoutBtn);
+
+        header.add(leftSection, rightSection);
         return header;
     }
 

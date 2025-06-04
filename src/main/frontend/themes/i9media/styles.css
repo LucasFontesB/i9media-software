@@ -83,3 +83,29 @@
 	background-position: center;
 	background-repeat: no-repeat;
 }
+
+.logout_botao{
+	background-color: transparent;
+	border: 1px solid rgba(255,255,255,0.3);
+	color: white;
+	font-size: 14px;
+	height: 32px;
+}
+
+.logout_botao:Hover{
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.bemvindo_botao{
+	background-color: rgba(255,255,255,0.1);
+	color: white;
+	border: 1px solid rgba(255,255,255,0.2);
+	font-size: 14px;
+	height: 32px
+}
+
+.bemvindo_botao:Hover{
+	cursor: pointer;
+	font-weight: bold;
+}
