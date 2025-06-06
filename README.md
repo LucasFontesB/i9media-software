@@ -150,7 +150,7 @@ Design responsivo e intuitivo: interface clean com componentes Vaadin, focada em
 
 > 📝 Nota: ajuste as rotas e serviços conforme as regras de negócio definidas pela equipe I9Media. Este README deve servir como guia inicial para desenvolvedores que ingressam no projeto.
 
-📫 Contato
+## 📫 Contato
 Autor: Lucas Fontes Britto
 
 E-mail: lfontesbritto@gmail.com
