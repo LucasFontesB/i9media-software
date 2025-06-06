@@ -1,5 +1,7 @@
 # I9Midia Software
 
+![Apache-2.0](https://img.shields.io/badge/Apache--2.0-green?style=for-the-badge)
+
 ![Vaadin](https://img.shields.io/badge/Vaadin-00B4F0?style=for-the-badge&logo=Vaadin&logoColor=white)
 ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Css](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
