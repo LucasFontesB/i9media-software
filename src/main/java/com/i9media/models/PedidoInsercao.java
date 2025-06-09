@@ -1,6 +1,7 @@
 package com.i9media.models;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 
 public class PedidoInsercao {
@@ -17,7 +18,7 @@ public class PedidoInsercao {
     private BigDecimal totalLiquido;
     private String midiaResponsavel;
     private int percentualIndicacao;
-    private BigDecimal midia;
+    private String midia;
     private BigDecimal liquidoFinal;
     private int piAgencia;
     private Date vencimentopiAgencia;
@@ -25,6 +26,51 @@ public class PedidoInsercao {
     private BigDecimal piI9;
     private Date dataPagamentoParaVeiculo;
     private String nfVeiculo;
+    
+    public BigDecimal CalcularBVAgencia(String bv) {
+    	BigDecimal resultado;
+    	BigDecimal valor = valorLiquido;
+    	BigDecimal valor_bv = new BigDecimal(bv);
+    	resultado = valor.multiply(valor_bv).setScale(2, RoundingMode.HALF_UP);
+    	
+    	return resultado;
+    }
+    
+    public BigDecimal CalcularTotalLiquido() {
+    	BigDecimal resultado;
+    	BigDecimal valor_liquido = valorLiquido;
+    	BigDecimal valor_repasse = repasseVeiculo;
+    	BigDecimal valor_comissao = valorComissao;
+    	BigDecimal valor_bvagencia = bvAgencia;
+    	BigDecimal valor_imposto = imposto;
+    	
+    	resultado = valor_liquido
+    	        .subtract(valor_repasse)
+    	        .subtract(valor_bvagencia)
+    	        .subtract(valor_imposto)
+    	        .add(valor_comissao);
+    	resultado = resultado.setScale(2, RoundingMode.HALF_UP);
+    	
+    	return resultado;
+    }
+    
+    public BigDecimal CalcularComissao() {
+    	BigDecimal resultado;
+    	BigDecimal valor = repasseVeiculo;
+    	BigDecimal comissao = new BigDecimal("0.10");
+    	resultado = valor.multiply(comissao).setScale(2, RoundingMode.HALF_UP);
+    	
+    	return resultado;
+    }
+    
+    public BigDecimal CalcularImposto(String porc_imposto) {
+        BigDecimal valor = valorLiquido;
+        BigDecimal percentual = new BigDecimal(porc_imposto);
+        BigDecimal impostoDecimal = percentual.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP);
+        BigDecimal resultado = valor.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
+
+        return resultado;
+    }
     
     public String getCliente() {
         return cliente;
@@ -130,11 +176,11 @@ public class PedidoInsercao {
         this.percentualIndicacao = percentualIndicacao;
     }
 
-    public BigDecimal getMidia() {
+    public String getMidia() {
         return midia;
     }
 
-    public void setMidia(BigDecimal midia) {
+    public void setMidia(String midia) {
         this.midia = midia;
     }
 
