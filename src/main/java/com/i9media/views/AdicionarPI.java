@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.i9media.DB;
 import com.i9media.PdfExtractor;
 import com.i9media.models.Agencia;
+import com.i9media.models.Cliente;
+import com.i9media.models.Executivo;
 import com.i9media.models.PedidoInsercao;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
@@ -17,7 +20,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -35,6 +38,7 @@ public class AdicionarPI extends Dialog {
     private TextField midiaField = new TextField("Mídia*");
     private TextField agenciaField = new TextField("Agência*");
     private TextField pracaField = new TextField("Praça*");
+    private TextField executivoField = new TextField("Executivo*");
 
     private NumberField valorLiquidoField = new NumberField("Valor Líquido*");
     private NumberField valorRepasseField = new NumberField("Valor de Repasse");
@@ -45,43 +49,41 @@ public class AdicionarPI extends Dialog {
     private NumberField valorComissaoField = new NumberField("Valor da Comissão");
 
     public AdicionarPI() {
-    	setCloseOnOutsideClick(false);
+        setCloseOnOutsideClick(false);
         setHeaderTitle("Adicionar Pedido de Inserção");
 
-        // Upload do PDF
         MemoryBuffer buffer = new MemoryBuffer();
         Upload upload = new Upload(buffer);
         upload.setAcceptedFileTypes(".pdf");
         upload.setMaxFiles(1);
-        upload.setDropLabel(new Label("Arraste um PDF aqui ou clique para selecionar"));
+        upload.setDropLabel(new Span("Arraste um PDF aqui ou clique para selecionar"));
         upload.setWidthFull();
 
         upload.addSucceededListener(event -> {
             try (InputStream inputStream = buffer.getInputStream()) {
                 dados = (HashMap<String, String>) PdfExtractor.extrairDados(inputStream);
-                Notification.show("PDF carregado com sucesso");
+                Notification.show("PDF carregado com sucesso", 3000, Notification.Position.MIDDLE);
                 preencherCampos(dados);
             } catch (IOException e) {
-                Notification.show("Erro ao processar o PDF");
+                Notification.show("Erro ao processar o PDF", 4000, Notification.Position.MIDDLE);
                 e.printStackTrace();
             }
         });
 
         upload.addFileRemovedListener(event -> {
             dados.clear();
-            Notification.show("PDF removido. Dados apagados.");
+            Notification.show("PDF removido. Dados apagados.", 3000, Notification.Position.MIDDLE);
             limparCampos();
         });
 
         upload.addFailedListener(event ->
-            Notification.show("Falha ao fazer upload do PDF.")
+            Notification.show("Falha ao fazer upload do PDF.", 3000, Notification.Position.MIDDLE)
         );
 
         upload.addFileRejectedListener(event ->
-            Notification.show("Apenas arquivos .PDF são aceitos.")
+            Notification.show("Apenas arquivos .PDF são aceitos.", 3000, Notification.Position.MIDDLE)
         );
 
-        // Configuração dos campos numéricos
         NumberField[] doubleFields = {
             valorLiquidoField, valorRepasseField, percentualImpostoField,
             valorImpostoField, percentualBVField, valorBVField, valorComissaoField
@@ -94,36 +96,74 @@ public class AdicionarPI extends Dialog {
 
         percentualImpostoField.setMax(100);
         percentualBVField.setMax(100);
+
         valorImpostoField.setReadOnly(true);
         valorBVField.setReadOnly(true);
         valorComissaoField.setReadOnly(true);
+        percentualImpostoField.setReadOnly(true);
+        percentualBVField.setReadOnly(true);
+        executivoField.setReadOnly(true);
 
-        // Listeners para cálculo automático
         ValueChangeListener<AbstractField.ComponentValueChangeEvent<NumberField, Double>> recalcular = e -> atualizarCamposCalculados();
         valorLiquidoField.addValueChangeListener(recalcular);
         percentualImpostoField.addValueChangeListener(recalcular);
         percentualBVField.addValueChangeListener(recalcular);
 
-        // Verificação de agência
         agenciaField.addValueChangeListener(e -> {
             String nomeAgencia = agenciaField.getValue();
             if (nomeAgencia != null && !nomeAgencia.trim().isEmpty()) {
                 Agencia agencia = Agencia.buscarPorNome(nomeAgencia.trim());
+
                 if (agencia == null) {
                     new CadastroAgenciaView(nomeAgencia).open();
                     Notification.show("Agência não cadastrada.", 1500, Notification.Position.MIDDLE);
+                    limparCampos();
+                    return;
+                }
+
+                percentualBVField.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
+
+                Executivo executivoResponsavel = null;
+
+                if (agencia.getExecutivoPadrao() != null) {
+                    executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
+                }
+
+                if (executivoResponsavel == null) {
+                    executivoResponsavel = Executivo.buscarExecutivoPorAgencia(agencia.getId());
+                }
+
+                if (executivoResponsavel != null) {
+                    executivoField.setValue(executivoResponsavel.getNome());
                 } else {
-                    percentualBVField.setValue(agencia.getValorBV().doubleValue());
+                    executivoField.clear();
+                    Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
+                }
+            } else {
+                percentualBVField.clear();
+                executivoField.clear();
+            }
+        });
+        
+        clienteField.addValueChangeListener(e -> {
+            String nomeCliente = clienteField.getValue();
+            if (nomeCliente != null && !nomeCliente.trim().isEmpty()) {
+                Cliente cliente = Cliente.buscarPorNome(nomeCliente.trim());
+
+                if (cliente == null) {
+                    new CadastroClienteView(nomeCliente).open();
+                    Notification.show("Cliente não cadastrado.", 1500, Notification.Position.MIDDLE);
+                    clienteField.clear();
                 }
             }
         });
 
-        // Agrupamento dos campos
         FormLayout formLayout = new FormLayout();
         formLayout.setWidthFull();
         formLayout.add(
             clienteField, veiculoField, midiaField, agenciaField,
-            pracaField, valorLiquidoField, valorRepasseField,
+            pracaField, executivoField,
+            valorLiquidoField, valorRepasseField,
             percentualImpostoField, valorImpostoField,
             percentualBVField, valorBVField, valorComissaoField
         );
@@ -133,8 +173,8 @@ public class AdicionarPI extends Dialog {
         midiaField.setWidthFull();
         agenciaField.setWidthFull();
         pracaField.setWidthFull();
+        executivoField.setWidthFull();
 
-        // Botões com espaçamento e estilo
         Button salvar = new Button("💾 Salvar PI", e -> salvarPI());
         Button limpar = new Button("🧹 Limpar", e -> limparCampos());
         Button fechar = new Button("❌ Fechar", e -> close());
@@ -143,7 +183,6 @@ public class AdicionarPI extends Dialog {
         botoes.setJustifyContentMode(JustifyContentMode.END);
         botoes.setWidthFull();
 
-        // Layout final com seções
         VerticalLayout layout = new VerticalLayout(
             new H3("Upload do Pedido (.pdf)"),
             upload,
@@ -156,7 +195,6 @@ public class AdicionarPI extends Dialog {
         layout.setPadding(true);
         layout.setWidth("800px");
 
-
         add(layout);
     }
 
@@ -167,38 +205,51 @@ public class AdicionarPI extends Dialog {
 
         Double percImp = percentualImpostoField.getValue();
         BigDecimal impostoDecimal = percImp != null
-            ? BigDecimal.valueOf(percImp).divide(BigDecimal.valueOf(100))
+            ? BigDecimal.valueOf(percImp).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
         Double percBV = percentualBVField.getValue();
         BigDecimal bvDecimal = percBV != null
-            ? BigDecimal.valueOf(percBV).divide(BigDecimal.valueOf(100))
+            ? BigDecimal.valueOf(percBV).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
         BigDecimal valorImposto = valorLiquido.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
         BigDecimal valorBV = valorLiquido.multiply(bvDecimal).setScale(2, RoundingMode.HALF_UP);
 
-
         valorImpostoField.setValue(valorImposto.doubleValue());
         valorBVField.setValue(valorBV.doubleValue());
-
     }
 
     public void preencherCampos(Map<String, String> dados) {
-    	String porc_imposto = DB.BuscarImposto();
-    	System.out.println(porc_imposto);
-    	double valorDouble = Double.parseDouble(porc_imposto);
-    	
+        String porc_imposto_str = DB.BuscarImposto();
+        double valorImpostoPadrao = 0.0;
+        try {
+            if (porc_imposto_str != null && !porc_imposto_str.isEmpty()) {
+                valorImpostoPadrao = Double.parseDouble(porc_imposto_str);
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Erro ao converter percentual de imposto padrão: " + e.getMessage());
+        }
+
         clienteField.setValue(dados.getOrDefault("cliente", ""));
         veiculoField.setValue(dados.getOrDefault("veiculo", ""));
         midiaField.setValue(dados.getOrDefault("meio", ""));
         agenciaField.setValue(dados.getOrDefault("agencia", ""));
         pracaField.setValue(dados.getOrDefault("praca", ""));
-        percentualImpostoField.setValue(valorDouble);
-        BigDecimal valor_BV = Agencia.buscarValorBVPorNome(agenciaField.getValue());
-        Double valor_BVdouble = valor_BV.doubleValue();
-        percentualBVField.setValue(valor_BVdouble);
-        System.out.print(valorDouble);
+
+        percentualImpostoField.setValue(valorImpostoPadrao);
+
+        String nomeAgencia = agenciaField.getValue();
+        if (nomeAgencia != null && !nomeAgencia.trim().isEmpty()) {
+            BigDecimal valor_BV = Agencia.buscarValorBVPorNome(nomeAgencia.trim());
+            if (valor_BV != null) {
+                percentualBVField.setValue(valor_BV.doubleValue());
+            } else {
+                percentualBVField.clear();
+            }
+        } else {
+            percentualBVField.clear();
+        }
 
         String valorStr = dados.get("valor_liquido");
         if (valorStr != null && !valorStr.isEmpty()) {
@@ -211,6 +262,7 @@ public class AdicionarPI extends Dialog {
         } else {
             valorLiquidoField.clear();
         }
+        atualizarCamposCalculados();
     }
 
     public void limparCampos() {
@@ -219,6 +271,7 @@ public class AdicionarPI extends Dialog {
         midiaField.clear();
         agenciaField.clear();
         pracaField.clear();
+        executivoField.clear();
         valorLiquidoField.clear();
         valorRepasseField.clear();
         percentualImpostoField.clear();
@@ -229,59 +282,84 @@ public class AdicionarPI extends Dialog {
     }
 
     private void salvarPI() {
-        String cliente = clienteField.getValue();
+        String clienteNome = clienteField.getValue();
         String veiculo = veiculoField.getValue();
         String midia = midiaField.getValue();
         String agenciaNome = agenciaField.getValue();
         String praca = pracaField.getValue();
+        String executivoNome = executivoField.getValue();
 
         Double valorLiquidoInput = valorLiquidoField.getValue();
-        Double porcImpostoInput = percentualImpostoField.getValue(); 
+        Double porcImpostoInput = percentualImpostoField.getValue();
         Double porcBVInput = percentualBVField.getValue();
+        Double valorImpostoCalculado = valorImpostoField.getValue();
+        Double valorBVAgenciaCalculado = valorBVField.getValue();
 
-        if (cliente == null || cliente.isEmpty() ||
-            veiculo == null || veiculo.isEmpty() ||
-            midia == null || midia.isEmpty() ||
-            agenciaNome == null || agenciaNome.isEmpty() ||
-            praca == null || praca.isEmpty() ||
-            valorLiquidoInput == null ||
-            porcImpostoInput == null ||
-            porcBVInput == null) {
-
+        if (clienteNome == null || clienteNome.trim().isEmpty()
+                || veiculo == null || veiculo.trim().isEmpty()
+                || midia == null || midia.trim().isEmpty()
+                || agenciaNome == null || agenciaNome.trim().isEmpty()
+                || praca == null || praca.trim().isEmpty()
+                || executivoNome == null || executivoNome.trim().isEmpty()
+                || valorLiquidoInput == null
+                || porcImpostoInput == null
+                || porcBVInput == null) {
             Notification.show("Preencha todos os campos obrigatórios.", 3000, Notification.Position.MIDDLE);
             return;
         }
 
-        // Verifica se a agência existe no banco
-        Agencia agencia = Agencia.buscarPorNome(agenciaNome);
+        Agencia agencia = Agencia.buscarPorNome(agenciaNome.trim());
         if (agencia == null) {
             Notification.show("Agência não cadastrada. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
             return;
         }
 
-        // Se passou pelas validações, continua o cadastro
+        Cliente cliente = Cliente.buscarPorNome(clienteNome.trim());
+        if (cliente == null) {
+            Notification.show("Cliente não cadastrado. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
+            return;
+        }
+
+        Executivo executivo = Executivo.buscarPorNome(executivoNome.trim());
+        if (executivo == null) {
+            Notification.show("Executivo não cadastrado. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
+            return;
+        }
+
         PedidoInsercao pi = new PedidoInsercao();
-        pi.setCliente(cliente);
+
+        pi.setClienteId(cliente.getId());
+        pi.setAgenciaId(agencia.getId());
+        pi.setExecutivoId(executivo.getId());
+
         pi.setVeiculo(veiculo);
-        pi.setMidia(midia);
-        pi.setAgencia(agenciaNome);
+        pi.setPraca(praca);
 
         BigDecimal valorLiquido = BigDecimal.valueOf(valorLiquidoInput).setScale(2, RoundingMode.HALF_UP);
         pi.setValorLiquido(valorLiquido);
 
-        // Usa valores preenchidos para calcular impostos e BV
-        BigDecimal imposto = pi.CalcularImposto(String.valueOf(porcImpostoInput));
-        BigDecimal bv = pi.CalcularBVAgencia(String.valueOf(porcBVInput));
+        BigDecimal porcImposto = BigDecimal.valueOf(porcImpostoInput).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal porcBV = BigDecimal.valueOf(porcBVInput).setScale(2, RoundingMode.HALF_UP);
 
-        System.out.println("=== PI ===");
-        System.out.println("Cliente: " + pi.getCliente());
-        System.out.println("Veículo: " + pi.getVeiculo());
-        System.out.println("Mídia: " + pi.getMidia());
-        System.out.println("Agência: " + pi.getAgencia());
-        System.out.println("Valor Líquido: " + pi.getValorLiquido());
-        System.out.println("Imposto: " + imposto);
-        System.out.println("BV: " + bv);
+        BigDecimal imposto = BigDecimal.valueOf(valorImpostoCalculado).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal bvAgencia = BigDecimal.valueOf(valorBVAgenciaCalculado).setScale(2, RoundingMode.HALF_UP);
 
-        Notification.show("PI salva (simulado)", 3000, Notification.Position.MIDDLE);
+        pi.setImposto(imposto);
+        pi.setBvAgencia(bvAgencia);
+        pi.setPorcImposto(porcImposto);
+        pi.setPorcBV(porcBV);
+
+        BigDecimal valorComissao = BigDecimal.ZERO;
+        pi.setValorComissao(valorComissao);
+
+        try {
+            pi.salvar();
+            Notification.show("Pedido de Inserção salvo com sucesso!", 3000, Notification.Position.TOP_CENTER);
+            limparCampos();
+            close();
+        } catch (SQLException e) {
+            Notification.show("Erro ao salvar Pedido de Inserção: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+            e.printStackTrace();
+        }
     }
 }

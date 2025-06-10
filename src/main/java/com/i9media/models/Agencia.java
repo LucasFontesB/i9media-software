@@ -4,51 +4,108 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.i9media.CaixaMensagem;
 import com.i9media.Conectar;
 
 public class Agencia {
-    private String id;
+    private Integer id;
     private String nome;
     private String cnpj;
     private String endereco;
     private String contato;
-    private String executivoResponsavel;
+    private List<Integer> executivosIds = new ArrayList<>();
+    private Integer executivoPadrao;
     private BigDecimal valorBV;
     
+    public static boolean existePorNome(String nome) {
+        String sql = "SELECT 1 FROM agencia WHERE LOWER(nome) = LOWER(?)";
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, nome.trim());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public String toString() {
+        return "Agencia{" +
+               "id=" + id +
+               ", nome='" + nome + '\'' +
+               ", cnpj='" + cnpj + '\'' +
+               ", endereco='" + endereco + '\'' +
+               ", contato='" + contato + '\'' +
+               ", executivosIds=" + executivosIds +
+               ", executivoPadrao=" + executivoPadrao +
+               ", valorBV=" + valorBV +
+               '}';
+    }
+
     public boolean salvarNoBanco() {
-        String sql = "INSERT INTO agencia (nome, cnpj, endereco, contato, executivo_responsavel, valor_bv) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO agencia (nome, cnpj, endereco, contato, valor_bv) " +
+                     "VALUES (?, ?, ?, ?, ?)";
         PreparedStatement ps = null;
         Connection conn = null;
+        ResultSet rs = null;
         boolean sucesso = false;
 
         try {
             conn = Conectar.getConnection();
-            ps = conn.prepareStatement(sql);
+            conn.setAutoCommit(false);
+
+            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, this.nome);
             ps.setString(2, this.cnpj);
             ps.setString(3, this.endereco);
             ps.setString(4, this.contato);
-            ps.setString(5, this.executivoResponsavel);
-            ps.setBigDecimal(6, this.valorBV);
+            ps.setBigDecimal(5, this.valorBV);
 
             int linhasAfetadas = ps.executeUpdate();
             if (linhasAfetadas > 0) {
-                sucesso = true;
-                CaixaMensagem.info_box("Cadastro", "Agência cadastrada com sucesso!");
+                rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    this.id = rs.getInt(1);
+
+                    for (Integer executivoId : executivosIds) {
+                        try (PreparedStatement psNn = conn.prepareStatement(
+                            "INSERT INTO executivo_agencia (executivo_id, agencia_id) VALUES (?, ?)")) {
+                            psNn.setInt(1, executivoId);
+                            psNn.setInt(2, this.id);
+                            psNn.executeUpdate();
+                        }
+                    }
+
+                    conn.commit();
+                    sucesso = true;
+                    CaixaMensagem.info_box("Cadastro", "Agência cadastrada com sucesso! ID: " + this.id);
+                }
             } else {
+                conn.rollback();
                 CaixaMensagem.info_box("Falha", "Nenhuma linha inserida.");
             }
 
-        } catch (Exception e) {
-            CaixaMensagem.info_box("Erro", "Erro ao cadastrar agência.");
+        } catch (SQLException e) {
+            try { if (conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            CaixaMensagem.info_box("Erro", "Erro ao cadastrar agência: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
+                if (rs != null) rs.close();
                 if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (Exception ex) {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         }
@@ -89,7 +146,7 @@ public class Agencia {
     }
     
     public static Agencia buscarPorNome(String nomeAgencia) {
-        String sql = "SELECT * FROM agencia WHERE nome = ?";
+        String sql = "SELECT * FROM agencia WHERE LOWER(nome) = LOWER(?)";
         PreparedStatement ps = null;
         Connection conn = null;
         Agencia agencia = null;
@@ -102,12 +159,11 @@ public class Agencia {
 
             if (rs.next()) {
                 agencia = new Agencia();
-                agencia.setId(String.valueOf(rs.getInt("id")));
+                agencia.setId(Integer.valueOf(rs.getInt("id")));
                 agencia.setNome(rs.getString("nome"));
                 agencia.setCnpj(rs.getString("cnpj"));
                 agencia.setEndereco(rs.getString("endereco"));
                 agencia.setContato(rs.getString("contato"));
-                agencia.setExecutivoResponsavel(rs.getString("executivo_responsavel"));
                 agencia.setValorBV(rs.getBigDecimal("valor_bv"));
             } 
         } catch (Exception e) {
@@ -124,61 +180,32 @@ public class Agencia {
         return agencia;
     }
 
-    // Getters e Setters
-
-    public String getId() {
-        return id;
+    public List<Integer> getExecutivosIds() {
+        return executivosIds;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setExecutivosIds(List<Integer> executivosIds) {
+        this.executivosIds = executivosIds;
     }
 
-    public String getNome() {
-        return nome;
+    public Integer getExecutivoPadrao() {
+        return executivoPadrao;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setExecutivoPadrao(Integer executivoPadrao) {
+        this.executivoPadrao = executivoPadrao;
     }
 
-    public String getCnpj() {
-        return cnpj;
-    }
-
-    public void setCnpj(String cnpj) {
-        this.cnpj = cnpj;
-    }
-
-    public String getEndereco() {
-        return endereco;
-    }
-
-    public void setEndereco(String endereco) {
-        this.endereco = endereco;
-    }
-
-    public String getContato() {
-        return contato;
-    }
-
-    public void setContato(String contato) {
-        this.contato = contato;
-    }
-
-    public String getExecutivoResponsavel() {
-        return executivoResponsavel;
-    }
-
-    public void setExecutivoResponsavel(String executivoResponsavel) {
-        this.executivoResponsavel = executivoResponsavel;
-    }
-
-    public BigDecimal getValorBV() {
-        return valorBV;
-    }
-
-    public void setValorBV(BigDecimal valorBV) {
-        this.valorBV = valorBV;
-    }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public String getCnpj() { return cnpj; }
+    public void setCnpj(String cnpj) { this.cnpj = cnpj; }
+    public String getEndereco() { return endereco; }
+    public void setEndereco(String endereco) { this.endereco = endereco; }
+    public String getContato() { return contato; }
+    public void setContato(String contato) { this.contato = contato; }
+    public BigDecimal getValorBV() { return valorBV; }
+    public void setValorBV(BigDecimal valorBV) { this.valorBV = valorBV; }
 }
