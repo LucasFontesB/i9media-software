@@ -57,6 +57,7 @@ public class CadastroClienteView extends Dialog {
                 cliente.setContato(contato.trim());
 
                 if (cliente.salvarNoBanco()) {
+                	Notification.show("Cliente cadastrado com sucesso.", 3000, Notification.Position.MIDDLE);
                     close();
                 } else {
                     Notification.show("Falha ao cadastrar cliente.", 3000, Notification.Position.MIDDLE);

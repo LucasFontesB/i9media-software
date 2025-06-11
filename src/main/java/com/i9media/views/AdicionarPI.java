@@ -51,6 +51,11 @@ public class AdicionarPI extends Dialog {
     public AdicionarPI() {
         setCloseOnOutsideClick(false);
         setHeaderTitle("Adicionar Pedido de Inserção");
+        
+        String porc_imposto_str = DB.BuscarImposto();
+        Double valorImposto = Double.parseDouble(porc_imposto_str);
+        
+        percentualImpostoField.setValue(valorImposto);
 
         MemoryBuffer buffer = new MemoryBuffer();
         Upload upload = new Upload(buffer);
@@ -108,6 +113,7 @@ public class AdicionarPI extends Dialog {
         valorLiquidoField.addValueChangeListener(recalcular);
         percentualImpostoField.addValueChangeListener(recalcular);
         percentualBVField.addValueChangeListener(recalcular);
+        
 
         agenciaField.addValueChangeListener(e -> {
             String nomeAgencia = agenciaField.getValue();
@@ -115,30 +121,22 @@ public class AdicionarPI extends Dialog {
                 Agencia agencia = Agencia.buscarPorNome(nomeAgencia.trim());
 
                 if (agencia == null) {
-                    new CadastroAgenciaView(nomeAgencia).open();
+                	CadastroAgenciaView cadastroView = new CadastroAgenciaView(nomeAgencia.trim());
+                	cadastroView.addOpenedChangeListener(event -> {
+                	    if (!event.isOpened()) { // Dialog fechado
+                	        String nomeAtual = agenciaField.getValue();
+                	        if (nomeAtual != null && !nomeAtual.trim().isEmpty()) {
+                	            atualizarCamposAgencia(nomeAtual);
+                	        }
+                	    }
+                	});
+                	cadastroView.open();
+
                     Notification.show("Agência não cadastrada.", 1500, Notification.Position.MIDDLE);
-                    limparCampos();
                     return;
                 }
 
-                percentualBVField.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
-
-                Executivo executivoResponsavel = null;
-
-                if (agencia.getExecutivoPadrao() != null) {
-                    executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
-                }
-
-                if (executivoResponsavel == null) {
-                    executivoResponsavel = Executivo.buscarExecutivoPorAgencia(agencia.getId());
-                }
-
-                if (executivoResponsavel != null) {
-                    executivoField.setValue(executivoResponsavel.getNome());
-                } else {
-                    executivoField.clear();
-                    Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
-                }
+                atualizarCamposAgencia(nomeAgencia);
             } else {
                 percentualBVField.clear();
                 executivoField.clear();
@@ -153,7 +151,6 @@ public class AdicionarPI extends Dialog {
                 if (cliente == null) {
                     new CadastroClienteView(nomeCliente).open();
                     Notification.show("Cliente não cadastrado.", 1500, Notification.Position.MIDDLE);
-                    clienteField.clear();
                 }
             }
         });
@@ -196,6 +193,33 @@ public class AdicionarPI extends Dialog {
         layout.setWidth("800px");
 
         add(layout);
+    }
+    
+    private void atualizarCamposAgencia(String nomeAgencia) {
+        Agencia agencia = Agencia.buscarPorNome(nomeAgencia.trim());
+        if (agencia == null) {
+            percentualBVField.clear();
+            executivoField.clear();
+            return;
+        }
+
+        percentualBVField.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
+
+        Executivo executivoResponsavel = null;
+        if (agencia.getExecutivoPadrao() != null) {
+            executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
+        }
+
+        if (executivoResponsavel == null) {
+            executivoResponsavel = Executivo.buscarExecutivoPorAgencia(agencia.getId());
+        }
+
+        if (executivoResponsavel != null) {
+            executivoField.setValue(executivoResponsavel.getNome());
+        } else {
+            executivoField.clear();
+            Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
+        }
     }
 
     private void atualizarCamposCalculados() {

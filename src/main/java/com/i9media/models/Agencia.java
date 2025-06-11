@@ -179,6 +179,41 @@ public class Agencia {
         }
         return agencia;
     }
+    
+    public static Agencia buscarPorId(Integer id) {
+        String sql = "SELECT * FROM agencia WHERE id = ?";
+        PreparedStatement ps = null;
+        Connection conn = null;
+        Agencia agencia = null;
+        
+        try {
+            conn = Conectar.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                agencia = new Agencia();
+                agencia.setId(Integer.valueOf(rs.getInt("id")));
+                agencia.setNome(rs.getString("nome"));
+                agencia.setCnpj(rs.getString("cnpj"));
+                agencia.setEndereco(rs.getString("endereco"));
+                agencia.setContato(rs.getString("contato"));
+                agencia.setValorBV(rs.getBigDecimal("valor_bv"));
+            } 
+        } catch (Exception e) {
+            CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        return agencia;
+    }
 
     public List<Integer> getExecutivosIds() {
         return executivosIds;

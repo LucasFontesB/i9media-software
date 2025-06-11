@@ -7,12 +7,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.i9media.CaixaMensagem;
 import com.i9media.Conectar;
 
-import java.sql.Date; 
+import java.util.Date; 
 
 public class PedidoInsercao {
     private Integer id;
@@ -40,10 +42,13 @@ public class PedidoInsercao {
 
     private String piAgencia; 
     private Date vencimentopiAgencia;
-    private Boolean checkingEnviado;
+    private Date checkingEnviado;
     private Integer piI9Id; 
     private Date dataPagamentoParaVeiculo;
     private String nfVeiculo;
+    
+    private String emEdicaoPor; 
+    private Date edicaoInicio;
 
     public PedidoInsercao() {}
 
@@ -110,8 +115,8 @@ public class PedidoInsercao {
     public Date getVencimentopiAgencia() { return vencimentopiAgencia; }
     public void setVencimentopiAgencia(Date vencimentopiAgencia) { this.vencimentopiAgencia = vencimentopiAgencia; }
 
-    public Boolean getCheckingEnviado() { return checkingEnviado; }
-    public void setCheckingEnviado(Boolean checkingEnviado) { this.checkingEnviado = checkingEnviado; }
+    public Date getCheckingEnviado() { return checkingEnviado; }
+    public void setCheckingEnviado(Date checkingEnviado) { this.checkingEnviado = checkingEnviado; }
 
     public Integer getPiI9Id() { return piI9Id; }
     public void setPiI9Id(Integer piI9Id) { this.piI9Id = piI9Id; }
@@ -121,6 +126,12 @@ public class PedidoInsercao {
 
     public String getNfVeiculo() { return nfVeiculo; }
     public void setNfVeiculo(String nfVeiculo) { this.nfVeiculo = nfVeiculo; }
+    
+    public String getEmEdicaoPor() { return emEdicaoPor; }
+    public void setEmEdicaoPor(String emEdicaoPor) { this.emEdicaoPor = emEdicaoPor; }
+    
+    public Date getEdicaoInicio() { return edicaoInicio; }
+    public void setEdicaoInicio(Date edicaoInicio) { this.edicaoInicio = edicaoInicio; }
 
     public BigDecimal CalcularBVAgencia(String bv) {
         BigDecimal valor = this.valorLiquido;
@@ -141,7 +152,7 @@ public class PedidoInsercao {
         	conn = Conectar.getConnection();
 
             String sql = "SELECT " +
-                         "id, cliente_id, agencia_id, executivo_id, veiculo, praça, valorLiquido, " +
+                         "id, cliente_id, agencia_id, executivo_id, veiculo, praca, valorLiquido, " +
                          "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
                          "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
                          "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
@@ -174,7 +185,7 @@ public class PedidoInsercao {
                 pi.setPorcBV(rs.getBigDecimal("porcbv"));
                 pi.setPiAgencia(rs.getString("piAgencia"));
                 pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
-                pi.setCheckingEnviado(rs.getBoolean("checkingEnviado"));
+                pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
                 pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
@@ -212,6 +223,60 @@ public class PedidoInsercao {
         resultado = resultado.setScale(2, RoundingMode.HALF_UP);
         return resultado;
     }
+    
+    public static PedidoInsercao buscarPorId(Integer id) {
+        String sql = "SELECT * FROM pi WHERE id = ?";
+        PreparedStatement ps = null;
+        Connection conn = null;
+        PedidoInsercao pi = null;
+        
+        try {
+            conn = Conectar.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+            	pi = new PedidoInsercao();
+            	pi.setId(rs.getInt("id"));
+                pi.setClienteId(rs.getInt("cliente_id"));
+                pi.setAgenciaId(rs.getInt("agencia_id"));
+                pi.setExecutivoId(rs.getInt("executivo_id"));
+                pi.setVeiculo(rs.getString("veiculo"));
+                pi.setPraca(rs.getString("praca")); 
+                pi.setValorLiquido(rs.getBigDecimal("valorLiquido"));
+                pi.setRepasseVeiculo(rs.getBigDecimal("repasseVeiculo"));
+                pi.setImposto(rs.getBigDecimal("imposto"));
+                pi.setBvAgencia(rs.getBigDecimal("bvAgencia"));
+                pi.setComissaoPercentual(rs.getBigDecimal("comissaoPercentual"));
+                pi.setValorComissao(rs.getBigDecimal("valorComissao"));
+                pi.setTotalLiquido(rs.getBigDecimal("totalLiquido"));
+                pi.setMidiaResponsavel(rs.getString("midiaResponsavel"));
+                pi.setPercentualIndicacao(rs.getBigDecimal("percentualIndicacao"));
+                pi.setMidia(rs.getString("midia"));
+                pi.setLiquidoFinal(rs.getBigDecimal("liquidoFinal"));
+                pi.setPorcImposto(rs.getBigDecimal("porcimposto"));
+                pi.setPorcBV(rs.getBigDecimal("porcbv"));
+                pi.setPiAgencia(rs.getString("piAgencia"));
+                pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
+                pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
+                pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
+                pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
+                pi.setNfVeiculo(rs.getString("nfVeiculo"));
+            } 
+        } catch (Exception e) {
+            CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        return pi;
+    }
 
     public BigDecimal CalcularComissao() {
         BigDecimal valor = this.repasseVeiculo != null ? this.repasseVeiculo : BigDecimal.ZERO;
@@ -227,6 +292,28 @@ public class PedidoInsercao {
         BigDecimal resultado = valor.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
         return resultado;
     }
+    
+    public void atualizar() throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        try {
+            conn = Conectar.getConnection();
+            String sql = "UPDATE pi SET em_edicao_por = ?, edicao_inicio = ? WHERE id = ?";
+            stmt = conn.prepareStatement(sql);
+            System.out.print("Em edição (No PI): "+this.emEdicaoPor);
+            stmt.setString(1, this.emEdicaoPor);
+            if (this.edicaoInicio != null) {
+                stmt.setTimestamp(2, new Timestamp(this.edicaoInicio.getTime()));
+            } else {
+                stmt.setTimestamp(2, null);
+            }
+            stmt.setInt(3, this.id);
+            stmt.executeUpdate();
+        } finally {
+            if (stmt != null) stmt.close();
+            if (conn != null) conn.close();
+        }
+    }
 
     public void salvar() throws SQLException {
         Connection conn = null;
@@ -236,7 +323,7 @@ public class PedidoInsercao {
         	conn = Conectar.getConnection();
 
             String sql = "INSERT INTO PI (" +
-                         "cliente_id, agencia_id, executivo_id, veiculo, praça, valorLiquido, " +
+                         "cliente_id, agencia_id, executivo_id, veiculo, praca, valorLiquido, " +
                          "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
                          "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
                          "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
@@ -267,10 +354,10 @@ public class PedidoInsercao {
             stmt.setBigDecimal(18, this.porcBV);
 
             stmt.setString(19, this.piAgencia);
-            stmt.setDate(20, this.vencimentopiAgencia);
+            stmt.setDate(20, (java.sql.Date) this.vencimentopiAgencia);
 
             if (this.checkingEnviado != null) {
-                stmt.setBoolean(21, this.checkingEnviado);
+                stmt.setDate(21, (java.sql.Date) this.checkingEnviado);
             } else {
                 stmt.setNull(21, java.sql.Types.BOOLEAN);
             }
@@ -281,7 +368,7 @@ public class PedidoInsercao {
                 stmt.setNull(22, java.sql.Types.INTEGER);
             }
 
-            stmt.setDate(23, this.dataPagamentoParaVeiculo);
+            stmt.setDate(23, (java.sql.Date) this.dataPagamentoParaVeiculo);
             stmt.setString(24, this.nfVeiculo);
 
             int rowsAffected = stmt.executeUpdate();

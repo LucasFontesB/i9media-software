@@ -1,7 +1,5 @@
 package com.i9media;
 
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,8 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  */
 @SpringBootApplication
-@Theme(value = "i9media")
-public class Application implements AppShellConfigurator {
+public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);

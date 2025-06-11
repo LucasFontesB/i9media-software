@@ -59,7 +59,7 @@ public class Cliente {
     
     public static boolean existePorNomeIgnoreCase(String nome) {
         try (Connection conn = Conectar.getConnection()) {
-            String sql = "SELECT COUNT(*) FROM cliente WHERE LOWER(nome) = LOWER(?)";
+            String sql = "SELECT COUNT(*) FROM clientes WHERE LOWER(nome) = LOWER(?)";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, nome.trim());
                 ResultSet rs = stmt.executeQuery();
@@ -74,7 +74,7 @@ public class Cliente {
     }
     
     public boolean salvarNoBanco() {
-        String sql = "INSERT INTO cliente (nome, endereco, contato) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO clientes (nome, endereco, contato) VALUES (?, ?, ?)";
 
         try (Connection conn = Conectar.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -121,6 +121,49 @@ public class Cliente {
 
         } catch (SQLException e) {
             System.err.println("Erro ao buscar cliente por nome: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (stmt != null) stmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Erro ao fechar recursos: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        return cliente;
+    }
+    
+    public static Cliente buscarPorId(Integer id) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        Cliente cliente = null;
+
+        if (id == null) {
+            return null;
+        }
+
+        try {
+        	conn = Conectar.getConnection();
+
+            String sql = "SELECT id, nome, endereco, contato FROM clientes WHERE id = ?";
+            stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, id);
+
+            rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                cliente = new Cliente();
+                cliente.setId(rs.getInt("id"));
+                cliente.setNome(rs.getString("nome"));
+                cliente.setEndereco(rs.getString("endereco"));
+                cliente.setContato(rs.getString("contato"));
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar cliente por id: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
