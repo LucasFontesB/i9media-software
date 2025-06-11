@@ -129,7 +129,9 @@ public class DashboardOpecView extends Dashboard{
 	        grid.addItemDoubleClickListener(event -> {
 	            PedidoInsercao selectedPi = event.getItem();
 	            if (selectedPi != null) {
-	                PIDTO dto = PIDTO.convertToDTO(selectedPi);
+	            	Integer id = selectedPi.getId();
+	            	PedidoInsercao pi = PedidoInsercao.buscarPorId(id);
+	            	PIDTO dto = PIDTO.convertToDTO(pi);
 	                PIView piViewDialog;
 					try {
 						piViewDialog = new PIView(dto);

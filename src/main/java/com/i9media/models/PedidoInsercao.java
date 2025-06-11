@@ -156,7 +156,7 @@ public class PedidoInsercao {
                          "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
                          "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
                          "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
-                         "piI9_id, dataPagamentoParaVeiculo, nfVeiculo " +
+                         "piI9_id, dataPagamentoParaVeiculo, nfVeiculo, em_edicao_por, edicao_inicio " +
                          "FROM PI";
 
             stmt = conn.prepareStatement(sql);
@@ -189,6 +189,8 @@ public class PedidoInsercao {
                 pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
+                pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
+                pi.setEdicaoInicio(rs.getDate("edicao_inicio"));
 
                 pedidos.add(pi);
             }
@@ -263,6 +265,8 @@ public class PedidoInsercao {
                 pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
+                pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
+                pi.setEdicaoInicio(rs.getDate("edicao_inicio"));
             } 
         } catch (Exception e) {
             CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
