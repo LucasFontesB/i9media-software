@@ -17,6 +17,7 @@ import com.i9media.models.PedidoInsercao;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
@@ -47,6 +48,23 @@ public class AdicionarPI extends Dialog {
     private NumberField percentualBVField = new NumberField("% do BV*");
     private NumberField valorBVField = new NumberField("Valor do BV*");
     private NumberField valorComissaoField = new NumberField("Valor da Comissão");
+    
+    private final NumberField totalLiquido = new NumberField("Total Líquido");
+    private final NumberField liquidoFinal = new NumberField("Líquido Final");
+
+    private final TextField midiaResponsavel = new TextField("Mídia Responsável");
+    private final NumberField percentualIndicacao = new NumberField("% Indicação");
+
+    private final NumberField porcImposto = new NumberField("% Imposto");
+    private final NumberField porcBV = new NumberField("% BV");
+
+    private final TextField piAgencia = new TextField("PI Agência");
+    private final DatePicker vencimentoPiAgencia = new DatePicker("Vencimento PI Agência");
+
+    private final DatePicker checkingEnviado = new DatePicker("Data de Envio do Checking");
+    private final TextField piI9Id = new TextField("PI I9 ID");
+    private final DatePicker dataPagamentoParaVeiculo = new DatePicker("Data Pagamento Veículo");
+    private final TextField nfVeiculo = new TextField("NF Veículo");
 
     public AdicionarPI() {
         setCloseOnOutsideClick(false);
@@ -158,12 +176,19 @@ public class AdicionarPI extends Dialog {
         FormLayout formLayout = new FormLayout();
         formLayout.setWidthFull();
         formLayout.add(
-            clienteField, veiculoField, midiaField, agenciaField,
-            pracaField, executivoField,
-            valorLiquidoField, valorRepasseField,
-            percentualImpostoField, valorImpostoField,
-            percentualBVField, valorBVField, valorComissaoField
-        );
+        	    clienteField, veiculoField, midiaField, agenciaField, pracaField, executivoField,
+
+        	    valorLiquidoField, valorRepasseField, percentualImpostoField, valorImpostoField,
+        	    percentualBVField, valorBVField, valorComissaoField, totalLiquido, liquidoFinal,
+
+        	    midiaResponsavel, percentualIndicacao,
+
+        	    porcImposto, porcBV,
+
+        	    piAgencia, vencimentoPiAgencia,
+
+        	    checkingEnviado, piI9Id, dataPagamentoParaVeiculo, nfVeiculo
+        	);
 
         clienteField.setWidthFull();
         veiculoField.setWidthFull();
@@ -171,6 +196,26 @@ public class AdicionarPI extends Dialog {
         agenciaField.setWidthFull();
         pracaField.setWidthFull();
         executivoField.setWidthFull();
+        
+        NumberField[] novosDoubleFields = {
+        	    totalLiquido, liquidoFinal, percentualIndicacao, porcImposto, porcBV
+        	};
+        	for (NumberField field : novosDoubleFields) {
+        	    field.setStep(0.01);
+        	    field.setMin(0);
+        	    field.setWidthFull();
+        	}
+
+        	TextField[] novosTextFields = {
+        	    midiaResponsavel, piAgencia, piI9Id, nfVeiculo
+        	};
+        	for (TextField field : novosTextFields) {
+        	    field.setWidthFull();
+        	}
+
+        	vencimentoPiAgencia.setWidthFull();
+        	checkingEnviado.setWidthFull();
+        	dataPagamentoParaVeiculo.setWidthFull();
 
         Button salvar = new Button("💾 Salvar PI", e -> salvarPI());
         Button limpar = new Button("🧹 Limpar", e -> limparCampos());
@@ -290,7 +335,7 @@ public class AdicionarPI extends Dialog {
     }
 
     public void limparCampos() {
-        clienteField.clear();
+    	clienteField.clear();
         veiculoField.clear();
         midiaField.clear();
         agenciaField.clear();
@@ -303,6 +348,22 @@ public class AdicionarPI extends Dialog {
         percentualBVField.clear();
         valorBVField.clear();
         valorComissaoField.clear();
+        totalLiquido.clear();
+        liquidoFinal.clear();
+
+        midiaResponsavel.clear();
+        percentualIndicacao.clear();
+
+        porcImposto.clear();
+        porcBV.clear();
+
+        piAgencia.clear();
+        vencimentoPiAgencia.clear();
+
+        checkingEnviado.clear();
+        piI9Id.clear();
+        dataPagamentoParaVeiculo.clear();
+        nfVeiculo.clear();
     }
 
     private void salvarPI() {
