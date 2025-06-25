@@ -7,6 +7,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
@@ -16,7 +17,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.i9media.models.Usuario;
+
+import java.sql.SQLException;
+
 import com.i9media.Sair;
+import com.i9media.Service.PedidoInsercaoService;
 
 @PageTitle("I9Media - Dashboard")
 @Route("dashboard")
@@ -90,8 +95,7 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
 
         Button welcomeBtn = new Button("Bem-vindo, " + (user != null ? user.getNome() : "Visitante"), conta_img);
         welcomeBtn.addClassName("bemvindo_botao");
-        
-        
+            
         Image sair_img = new Image ("/images/logout.png", "Imagem Sair");
         sair_img.setWidth("16px");
         sair_img.setHeight("16px");

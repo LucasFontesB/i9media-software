@@ -18,15 +18,20 @@ public class ExecutivoAgencia {
         ) {
             psCheck.setInt(1, executivoId);
             psCheck.setInt(2, agenciaId);
+
             try (ResultSet rs = psCheck.executeQuery()) {
-                if (rs.next() && rs.getInt(1) == 0) {
-                    psInsert.setInt(1, executivoId);
-                    psInsert.setInt(2, agenciaId);
-                    psInsert.executeUpdate();
-                    return true;
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    if (count == 0) {
+                        psInsert.setInt(1, executivoId);
+                        psInsert.setInt(2, agenciaId);
+                        psInsert.executeUpdate();
+                        return true;
+                    }
                 }
             }
         }
+
         return false;
     }
 }

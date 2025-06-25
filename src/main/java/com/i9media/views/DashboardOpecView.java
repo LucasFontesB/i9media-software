@@ -1,7 +1,10 @@
 package com.i9media.views;
 
 import com.i9media.models.*;
+import com.i9media.utils.DateUtils;
+import com.i9media.utils.PIUpdateBroadcaster;
 import com.i9media.CriarCard;
+import com.i9media.CriarCard.CardComponent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -20,8 +23,11 @@ import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.AttachEvent;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.*;
@@ -36,6 +42,7 @@ public class DashboardOpecView extends Dashboard{
     private String nomeCliente;
     private String nomeAgencia;
     private String nomeExecutivo;
+    private CardComponent cardTotalPIs;
 	
 	public DashboardOpecView() {
         super();
@@ -65,15 +72,24 @@ public class DashboardOpecView extends Dashboard{
 
 	        H2 titulo = new H2("Lista de PIs");
 	        Button btnAdicionar = new Button("Adicionar PI", event -> {
-	            AdicionarPI telaaddpi = new AdicionarPI();
-	            telaaddpi.open();
+	        	AdicionarPI adicionarPI = new AdicionarPI(() -> atualizarCard());
+	        	adicionarPI.open();
 	        });
+	        
+	        List<PedidoInsercao> lista = PedidoInsercao.buscarTodos();
+	        int total = lista.size();
 
-	        Component card_pis = CriarCard.Criar("Número De PI's", "0");
-	        Component card_valortotal = CriarCard.Criar("Valor Total No Mês", "R$ 600,00");
-	        Component card_comissaomedia = CriarCard.Criar("Comissão Média", "14.0%");
+	        cardTotalPIs = CriarCard.Criar("Total de PIs", String.valueOf(total));
+	        /*Component card_valortotal = CriarCard.Criar("Valor Total No Mês", "R$ 600,00");
+	        Component card_comissaomedia = CriarCard.Criar("Comissão Média", "14.0%");*/
 
-	        cardslayout.add(card_pis, card_valortotal, card_comissaomedia);
+	        cardslayout.add(cardTotalPIs.layout/*, card_valortotal, card_comissaomedia*/);
+	        
+	        Runnable atualizarTotalPIs = () -> {
+	            List<PedidoInsercao> listaPI = PedidoInsercao.buscarTodos();
+	            int totalPI = listaPI.size();
+	            cardTotalPIs.valorLabel.setText(String.valueOf(total));
+	        };
 
 	        btnAdicionar.getStyle()
 	                .set("background-color", "#f97316")
@@ -85,44 +101,57 @@ public class DashboardOpecView extends Dashboard{
 	        header.add(titulo, btnAdicionar);
 	        header.expand(titulo);      
 	        
-	        grid.addColumn(PedidoInsercao::getClienteId).setHeader("ID Cliente").setAutoWidth(true);
 	        grid.addColumn(pedido -> {
 	            Cliente cliente = Cliente.buscarPorId(pedido.getClienteId());
 	            return cliente != null ? cliente.getNome() : "";
 	        }).setHeader("Cliente").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getAgenciaId).setHeader("ID Agência").setAutoWidth(true);
 	        grid.addColumn(pedido -> {
 	            Agencia agencia = Agencia.buscarPorId(pedido.getAgenciaId());
 	            return agencia != null ? agencia.getNome() : "";
 	        }).setHeader("Agência").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getExecutivoId).setHeader("ID Executivo").setAutoWidth(true);
 	        grid.addColumn(pedido -> {
 	            Executivo executivo = Executivo.buscarPorId(pedido.getExecutivoId());
 	            return executivo != null ? executivo.getNome() : "";
 	        }).setHeader("Executivo").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getVeiculo).setHeader("Veículo").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPraca).setHeader("Praça").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getValorLiquido).setHeader("Valor Líquido").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getRepasseVeiculo).setHeader("Repasse Veículo").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getImposto).setHeader("Imposto").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getBvAgencia).setHeader("BV Agência").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getComissaoPercentual).setHeader("Comissão %").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getValorComissao).setHeader("Valor Comissão").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getTotalLiquido).setHeader("Total Líquido").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getValorLiquido()))
+	        .setHeader("Valor Líquido").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getRepasseVeiculo()))
+	        .setHeader("Repasse Veículo").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getImposto()))
+	        .setHeader("Imposto").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getBvAgencia()))
+	        .setHeader("BV Agência").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getComissaoPercentual()))
+	        .setHeader("% Comissão").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getValorComissao()))
+	        .setHeader("Valor Comissão").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getTotalLiquido()))
+	        .setHeader("Total Líquido").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getMidiaResponsavel).setHeader("Mídia Resp.").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getPercentualIndicacao).setHeader("% Indicação").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getPercentualIndicacao()))
+	        .setHeader("% Indicação").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getMidia).setHeader("Mídia").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getLiquidoFinal).setHeader("Líquido Final").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getPorcImposto).setHeader("% Imposto").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getPorcBV).setHeader("% BV").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getLiquidoFinal()))
+	        .setHeader("Líquido Final").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcImposto()))
+	        .setHeader("% Imposto").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcBV()))
+	        .setHeader("% BV").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPiAgencia).setHeader("PI Agência").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getVencimentopiAgencia).setHeader("Venc. PI Agência").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getCheckingEnviado).setHeader("Checking Enviado").setAutoWidth(true);
+	        grid.addColumn(pedido -> DateUtils.formatarDataParaBrasileiro(pedido.getVencimentopiAgencia()))
+	        .setHeader("Venc. PI Agência").setAutoWidth(true);
+	        grid.addColumn(pedido -> DateUtils.formatarDataParaBrasileiro(pedido.getCheckingEnviado()))
+	        .setHeader("Checking Enviado")
+	        .setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPiI9Id).setHeader("PI I9 ID").setAutoWidth(true).setFlexGrow(0);
-	        grid.addColumn(PedidoInsercao::getDataPagamentoParaVeiculo).setHeader("Data Pagto. Veículo").setAutoWidth(true);
+	        grid.addColumn(pedido -> DateUtils.formatarDataParaBrasileiro(pedido.getDataPagamentoParaVeiculo()))
+	        .setHeader("Data Pagto. Veículo").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getNfVeiculo).setHeader("NF Veículo").setAutoWidth(true);   
 
 	        grid.setHeight("600px");
+	        atualizarGrid();
 
 	        layout.add(cardslayout, header, grid);
 	        
@@ -134,7 +163,7 @@ public class DashboardOpecView extends Dashboard{
 	            	PIDTO dto = PIDTO.convertToDTO(pi);
 	                PIView piViewDialog;
 					try {
-						piViewDialog = new PIView(dto);
+						piViewDialog = new PIView(dto, atualizarTotalPIs);
 						piViewDialog.open();
 					} catch (SQLException e) {
 						e.printStackTrace();
@@ -147,6 +176,29 @@ public class DashboardOpecView extends Dashboard{
 	    }
 	
 	@Override
+	protected void onAttach(AttachEvent attachEvent) {
+	    super.onAttach(attachEvent);
+	    PIUpdateBroadcaster.register(attachEvent.getUI());
+	    atualizarGrid();
+	}
+	
+	public void atualizarCard() {
+	    int novoTotal = PedidoInsercao.buscarTodos().size();
+	    cardTotalPIs.setValor(String.valueOf(novoTotal));
+	    atualizarGrid();
+	}
+	
+	private String formatarMoeda(BigDecimal valor) {
+        if (valor == null) return "R$ 0,00";
+        return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
+    }
+	
+	private String formatarPercentual(BigDecimal valor) {
+	    if (valor == null) return "0,00%";
+	    return String.format(Locale.forLanguageTag("pt-BR"), "%.2f%%", valor);
+	}
+	
+	/*@Override
 	protected void onAttach(AttachEvent attachEvent) {
 	    super.onAttach(attachEvent);
 
@@ -162,8 +214,8 @@ public class DashboardOpecView extends Dashboard{
 	                }
 	            });
 	        }
-	    }, 0, 10000);
-	}
+	    }, 0, 5000);
+	}*/
 
 	@Override
 	protected void onDetach(DetachEvent detachEvent) {

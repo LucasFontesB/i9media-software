@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ import com.i9media.models.Agencia;
 import com.i9media.models.Cliente;
 import com.i9media.models.Executivo;
 import com.i9media.models.PedidoInsercao;
+import com.i9media.utils.PIUpdateBroadcaster;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
 import com.vaadin.flow.component.button.Button;
@@ -55,9 +57,6 @@ public class AdicionarPI extends Dialog {
     private final TextField midiaResponsavel = new TextField("Mídia Responsável");
     private final NumberField percentualIndicacao = new NumberField("% Indicação");
 
-    private final NumberField porcImposto = new NumberField("% Imposto");
-    private final NumberField porcBV = new NumberField("% BV");
-
     private final TextField piAgencia = new TextField("PI Agência");
     private final DatePicker vencimentoPiAgencia = new DatePicker("Vencimento PI Agência");
 
@@ -65,9 +64,12 @@ public class AdicionarPI extends Dialog {
     private final TextField piI9Id = new TextField("PI I9 ID");
     private final DatePicker dataPagamentoParaVeiculo = new DatePicker("Data Pagamento Veículo");
     private final TextField nfVeiculo = new TextField("NF Veículo");
+    
+    private final Runnable atualizarCardCallback;
 
-    public AdicionarPI() {
-        setCloseOnOutsideClick(false);
+    public AdicionarPI(Runnable atualizarCardCallback) {
+        this.atualizarCardCallback = atualizarCardCallback;
+		setCloseOnOutsideClick(false);
         setHeaderTitle("Adicionar Pedido de Inserção");
         
         String porc_imposto_str = DB.BuscarImposto();
@@ -183,8 +185,6 @@ public class AdicionarPI extends Dialog {
 
         	    midiaResponsavel, percentualIndicacao,
 
-        	    porcImposto, porcBV,
-
         	    piAgencia, vencimentoPiAgencia,
 
         	    checkingEnviado, piI9Id, dataPagamentoParaVeiculo, nfVeiculo
@@ -198,7 +198,7 @@ public class AdicionarPI extends Dialog {
         executivoField.setWidthFull();
         
         NumberField[] novosDoubleFields = {
-        	    totalLiquido, liquidoFinal, percentualIndicacao, porcImposto, porcBV
+        	    totalLiquido, liquidoFinal, percentualIndicacao, percentualImpostoField, percentualBVField
         	};
         	for (NumberField field : novosDoubleFields) {
         	    field.setStep(0.01);
@@ -354,9 +354,6 @@ public class AdicionarPI extends Dialog {
         midiaResponsavel.clear();
         percentualIndicacao.clear();
 
-        porcImposto.clear();
-        porcBV.clear();
-
         piAgencia.clear();
         vencimentoPiAgencia.clear();
 
@@ -375,10 +372,25 @@ public class AdicionarPI extends Dialog {
         String executivoNome = executivoField.getValue();
 
         Double valorLiquidoInput = valorLiquidoField.getValue();
+        Double repasseInput = valorRepasseField.getValue();
+        Double impostoInput = valorImpostoField.getValue();
+        Double comissaoInput = valorComissaoField.getValue();
+        Double totalLiquidoInput = totalLiquido.getValue();
+        Double liquidoFinalInput = liquidoFinal.getValue();
+
         Double porcImpostoInput = percentualImpostoField.getValue();
         Double porcBVInput = percentualBVField.getValue();
-        Double valorImpostoCalculado = valorImpostoField.getValue();
-        Double valorBVAgenciaCalculado = valorBVField.getValue();
+        Double valorBVInput = valorBVField.getValue();
+        Double percentualIndicacaoInput = percentualIndicacao.getValue();
+
+        String midiaResp = midiaResponsavel.getValue();
+        String piAgenciaStr = piAgencia.getValue();
+        String nfVeiculoStr = nfVeiculo.getValue();
+        String piI9Str = piI9Id.getValue();
+
+        LocalDate vencimentoPI = vencimentoPiAgencia.getValue();
+        LocalDate checkingDate = checkingEnviado.getValue();
+        LocalDate dataPagamento = dataPagamentoParaVeiculo.getValue();
 
         if (clienteNome == null || clienteNome.trim().isEmpty()
                 || veiculo == null || veiculo.trim().isEmpty()
@@ -394,20 +406,11 @@ public class AdicionarPI extends Dialog {
         }
 
         Agencia agencia = Agencia.buscarPorNome(agenciaNome.trim());
-        if (agencia == null) {
-            Notification.show("Agência não cadastrada. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
-            return;
-        }
-
         Cliente cliente = Cliente.buscarPorNome(clienteNome.trim());
-        if (cliente == null) {
-            Notification.show("Cliente não cadastrado. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
-            return;
-        }
-
         Executivo executivo = Executivo.buscarPorNome(executivoNome.trim());
-        if (executivo == null) {
-            Notification.show("Executivo não cadastrado. Cadastre antes de continuar.", 4000, Notification.Position.MIDDLE);
+
+        if (agencia == null || cliente == null || executivo == null) {
+            Notification.show("Cliente, agência ou executivo não cadastrado.", 4000, Notification.Position.MIDDLE);
             return;
         }
 
@@ -419,23 +422,32 @@ public class AdicionarPI extends Dialog {
 
         pi.setVeiculo(veiculo);
         pi.setPraca(praca);
+        pi.setMidia(midia);
 
-        BigDecimal valorLiquido = BigDecimal.valueOf(valorLiquidoInput).setScale(2, RoundingMode.HALF_UP);
-        pi.setValorLiquido(valorLiquido);
+        pi.setValorLiquido(toBigDecimal(valorLiquidoInput));
+        pi.setRepasseVeiculo(toBigDecimal(repasseInput));
+        pi.setImposto(toBigDecimal(impostoInput));
+        pi.setBvAgencia(toBigDecimal(valorBVInput));
+        pi.setComissaoPercentual(BigDecimal.ZERO); // você pode calcular se quiser
+        pi.setValorComissao(toBigDecimal(comissaoInput));
+        pi.setTotalLiquido(toBigDecimal(totalLiquidoInput));
+        pi.setLiquidoFinal(toBigDecimal(liquidoFinalInput));
+        pi.setPorcImposto(toBigDecimal(porcImpostoInput));
+        pi.setPorcBV(toBigDecimal(porcBVInput));
 
-        BigDecimal porcImposto = BigDecimal.valueOf(porcImpostoInput).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal porcBV = BigDecimal.valueOf(porcBVInput).setScale(2, RoundingMode.HALF_UP);
+        pi.setMidiaResponsavel(midiaResp != null ? midiaResp.trim() : null);
+        pi.setPercentualIndicacao(toBigDecimal(percentualIndicacaoInput));
 
-        BigDecimal imposto = BigDecimal.valueOf(valorImpostoCalculado).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal bvAgencia = BigDecimal.valueOf(valorBVAgenciaCalculado).setScale(2, RoundingMode.HALF_UP);
+        pi.setPiAgencia(piAgenciaStr != null ? piAgenciaStr.trim() : null);
+        pi.setNfVeiculo(nfVeiculoStr != null ? nfVeiculoStr.trim() : null);
 
-        pi.setImposto(imposto);
-        pi.setBvAgencia(bvAgencia);
-        pi.setPorcImposto(porcImposto);
-        pi.setPorcBV(porcBV);
+        if (piI9Str != null && !piI9Str.trim().isEmpty()) {
+            pi.setPiI9Id(Integer.parseInt(piI9Str.trim()));
+        }
 
-        BigDecimal valorComissao = BigDecimal.ZERO;
-        pi.setValorComissao(valorComissao);
+        pi.setVencimentopiAgencia(toDate(vencimentoPI));
+        pi.setCheckingEnviado(toDate(checkingDate));
+        pi.setDataPagamentoParaVeiculo(toDate(dataPagamento));
 
         try {
             pi.salvar();
@@ -446,5 +458,17 @@ public class AdicionarPI extends Dialog {
             Notification.show("Erro ao salvar Pedido de Inserção: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
             e.printStackTrace();
         }
+        if (atualizarCardCallback != null) {
+            atualizarCardCallback.run();
+        }
+        PIUpdateBroadcaster.broadcast();
+    }
+    
+    private BigDecimal toBigDecimal(Double valor) {
+        return valor != null ? BigDecimal.valueOf(valor).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private java.sql.Date toDate(LocalDate localDate) {
+        return localDate != null ? java.sql.Date.valueOf(localDate) : null;
     }
 }

@@ -19,46 +19,35 @@ public class Usuario {
 	private boolean ativo;
 	
 	public static Usuario Iniciar_Usuario(int id) {
-		String sql = "SELECT * FROM usuarios WHERE id = ?";
-        PreparedStatement ps = null;
-        Connection conn = null;
-        Usuario usuario_logado = null;
-        
-        try {
-            conn = Conectar.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            ResultSet resultado = ps.executeQuery();
+	    String sql = "SELECT * FROM usuarios WHERE id = ?";
+	    Usuario usuario_logado = null;
 
-            if (resultado.next()) {
-            	usuario_logado = new Usuario();
-                usuario_logado.setId(String.valueOf(resultado.getInt("id")));
-                usuario_logado.setNome(resultado.getString("nome"));
-                usuario_logado.setUsuario(resultado.getString("usuario"));
-                usuario_logado.setSenha(resultado.getString("senha"));
-                usuario_logado.setEmail(resultado.getString("email"));
-                usuario_logado.setDepartamento(resultado.getString("departamento"));
-                usuario_logado.setCriado_em(resultado.getDate("criado_em"));
-                usuario_logado.setAtivo(resultado.getBoolean("ativo"));
+	    try (
+	        Connection conn = Conectar.getConnection();
+	        PreparedStatement ps = conn.prepareStatement(sql)
+	    ) {
+	        ps.setInt(1, id);
+	        try (ResultSet resultado = ps.executeQuery()) {
+	            if (resultado.next()) {
+	                usuario_logado = new Usuario();
+	                usuario_logado.setId(String.valueOf(resultado.getInt("id")));
+	                usuario_logado.setNome(resultado.getString("nome"));
+	                usuario_logado.setUsuario(resultado.getString("usuario"));
+	                usuario_logado.setSenha(resultado.getString("senha"));
+	                usuario_logado.setEmail(resultado.getString("email"));
+	                usuario_logado.setDepartamento(resultado.getString("departamento"));
+	                usuario_logado.setCriado_em(resultado.getDate("criado_em"));
+	                usuario_logado.setAtivo(resultado.getBoolean("ativo"));
+	            } else {
+	                CaixaMensagem.info_box("Erro Login", "Usuário Não Encontrado");
+	            }
+	        }
+	    } catch (Exception e) {
+	        CaixaMensagem.info_box("Erro", "Erro ao validar usuário");
+	        e.printStackTrace();
+	    }
 
-            } else {
-                CaixaMensagem.info_box("Erro Login", "Usuário Não Encontrado");
-            }
-
-        } catch (Exception e) {
-            CaixaMensagem.info_box("Erro", "Erro ao validar usuário");
-            e.printStackTrace();
-        } finally {
-            try {
-                if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-        
-        return usuario_logado;
-        
+	    return usuario_logado;
 	}
 	
 	public String getId() {

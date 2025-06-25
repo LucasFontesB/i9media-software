@@ -190,7 +190,7 @@ public class PedidoInsercao {
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
-                pi.setEdicaoInicio(rs.getDate("edicao_inicio"));
+                pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
 
                 pedidos.add(pi);
             }
@@ -230,17 +230,18 @@ public class PedidoInsercao {
         String sql = "SELECT * FROM pi WHERE id = ?";
         PreparedStatement ps = null;
         Connection conn = null;
+        ResultSet rs = null;
         PedidoInsercao pi = null;
         
         try {
             conn = Conectar.getConnection();
             ps = conn.prepareStatement(sql);
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
 
             if (rs.next()) {
-            	pi = new PedidoInsercao();
-            	pi.setId(rs.getInt("id"));
+                pi = new PedidoInsercao();
+                pi.setId(rs.getInt("id"));
                 pi.setClienteId(rs.getInt("cliente_id"));
                 pi.setAgenciaId(rs.getInt("agencia_id"));
                 pi.setExecutivoId(rs.getInt("executivo_id"));
@@ -266,13 +267,14 @@ public class PedidoInsercao {
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
-                pi.setEdicaoInicio(rs.getDate("edicao_inicio"));
+                pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
             } 
         } catch (Exception e) {
-            CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
+            CaixaMensagem.info_box("Erro", "Erro ao buscar PI no banco");
             e.printStackTrace();
         } finally {
             try {
+                if (rs != null) rs.close();  
                 if (ps != null) ps.close();
                 if (conn != null) conn.close();
             } catch (Exception ex) {
@@ -297,14 +299,15 @@ public class PedidoInsercao {
         return resultado;
     }
     
-    public void atualizar() throws SQLException {
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        try {
-            conn = Conectar.getConnection();
-            String sql = "UPDATE pi SET em_edicao_por = ?, edicao_inicio = ? WHERE id = ?";
-            stmt = conn.prepareStatement(sql);
-            System.out.print("Em edição (No PI): "+this.emEdicaoPor);
+    public void atualizar() {
+        String sql = "UPDATE pi SET em_edicao_por = ?, edicao_inicio = ? WHERE id = ?";
+        System.out.println("Iniciando Atualização No Banco");
+
+        try (
+            Connection conn = Conectar.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
+            System.out.println("Em edição (No PI): " + this.emEdicaoPor);
             stmt.setString(1, this.emEdicaoPor);
             if (this.edicaoInicio != null) {
                 stmt.setTimestamp(2, new Timestamp(this.edicaoInicio.getTime()));
@@ -313,36 +316,32 @@ public class PedidoInsercao {
             }
             stmt.setInt(3, this.id);
             stmt.executeUpdate();
-        } finally {
-            if (stmt != null) stmt.close();
-            if (conn != null) conn.close();
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao atualizar PI no banco: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public void salvar() throws SQLException {
-        Connection conn = null;
-        PreparedStatement stmt = null;
+        String sql = "INSERT INTO PI (" +
+                     "cliente_id, agencia_id, executivo_id, veiculo, praca, valorLiquido, " +
+                     "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
+                     "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
+                     "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
+                     "piI9_id, dataPagamentoParaVeiculo, nfVeiculo" +
+                     ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try {
-        	conn = Conectar.getConnection();
-
-            String sql = "INSERT INTO PI (" +
-                         "cliente_id, agencia_id, executivo_id, veiculo, praca, valorLiquido, " +
-                         "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
-                         "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
-                         "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
-                         "piI9_id, dataPagamentoParaVeiculo, nfVeiculo" +
-                         ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-
+        try (
+            Connection conn = Conectar.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+        ) {
             stmt.setInt(1, this.clienteId);
             stmt.setInt(2, this.agenciaId);
             stmt.setInt(3, this.executivoId);
             stmt.setString(4, this.veiculo);
             stmt.setString(5, this.praca);
             stmt.setBigDecimal(6, this.valorLiquido);
-
             stmt.setBigDecimal(7, this.repasseVeiculo); 
             stmt.setBigDecimal(8, this.imposto);
             stmt.setBigDecimal(9, this.bvAgencia);
@@ -353,45 +352,28 @@ public class PedidoInsercao {
             stmt.setBigDecimal(14, this.percentualIndicacao); 
             stmt.setString(15, this.midia);
             stmt.setBigDecimal(16, this.liquidoFinal); 
-
             stmt.setBigDecimal(17, this.porcImposto);
             stmt.setBigDecimal(18, this.porcBV);
-
             stmt.setString(19, this.piAgencia);
-            stmt.setDate(20, (java.sql.Date) this.vencimentopiAgencia);
 
-            if (this.checkingEnviado != null) {
-                stmt.setDate(21, (java.sql.Date) this.checkingEnviado);
-            } else {
-                stmt.setNull(21, java.sql.Types.BOOLEAN);
-            }
-
+            stmt.setDate(20, this.vencimentopiAgencia != null ? new java.sql.Date(this.vencimentopiAgencia.getTime()) : null);
+            stmt.setDate(21, this.checkingEnviado != null ? new java.sql.Date(this.checkingEnviado.getTime()) : null);
             if (this.piI9Id != null) {
                 stmt.setInt(22, this.piI9Id);
             } else {
                 stmt.setNull(22, java.sql.Types.INTEGER);
             }
-
-            stmt.setDate(23, (java.sql.Date) this.dataPagamentoParaVeiculo);
+            stmt.setDate(23, this.dataPagamentoParaVeiculo != null ? new java.sql.Date(this.dataPagamentoParaVeiculo.getTime()) : null);
             stmt.setString(24, this.nfVeiculo);
 
             int rowsAffected = stmt.executeUpdate();
-
             if (rowsAffected > 0) {
-                try (var generatedKeys = stmt.getGeneratedKeys()) {
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         this.id = generatedKeys.getInt(1);
                     }
                 }
                 System.out.println("PI salva com ID: " + this.id);
-            }
-
-        } finally {
-            if (stmt != null) {
-                stmt.close();
-            }
-            if (conn != null) {
-                conn.close();
             }
         }
     }

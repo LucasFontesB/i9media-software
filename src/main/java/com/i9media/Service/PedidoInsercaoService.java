@@ -1,12 +1,19 @@
 package com.i9media.Service;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
+import java.sql.Types;
 
 import org.springframework.stereotype.Service;
 
+import com.i9media.Conectar;
+import com.i9media.models.Agencia;
+import com.i9media.models.Cliente;
 import com.i9media.models.PIDTO;
 import com.i9media.models.PedidoInsercao;
+import com.vaadin.flow.component.notification.Notification;
 
 @Service
 public class PedidoInsercaoService {
@@ -15,27 +22,30 @@ public class PedidoInsercaoService {
 	    String emEdicaoPor = pi.getEmEdicaoPor();
 	    Date edicaoInicio = pi.getEdicaoInicio();
 
-	    // Se ninguém está editando, então não está bloqueado
 	    if (emEdicaoPor == null) {
+	    	System.out.println("emEdicaoPor é NULL");
 	        return false;
 	    }
 
-	    // Se o próprio usuário está editando, não está bloqueado para ele
 	    if (emEdicaoPor.equals(usuarioAtual)) {
+	    	System.out.println("Usuario emEdicaoPor é igual ao usuarioAtual");
 	        return false;
 	    }
 
-	    // Se está em edição por outro, verifica se o tempo expirou (30 minutos)
 	    if (edicaoInicio != null) {
 	        long diffMs = new Date().getTime() - edicaoInicio.getTime();
 	        if (diffMs >= 30 * 60 * 1000) {
-	            return false; // Edição expirou
+	        	System.out.println("Agora: " + new Date());
+	        	System.out.println("Início: " + edicaoInicio);
+	        	System.out.println("Diferença em ms: " + diffMs + " | em minutos: " + (diffMs / 1000 / 60));
+	        	System.out.println("Diferença de tempo maior que 30 minutos");
+	            return false; 
 	        } else {
-	            return true; // Ainda está bloqueado
+	        	System.out.println("Diferença de tempo menor que 30 minutos");
+	            return true; 
 	        }
 	    }
-
-	    // Se edicaoInicio for null, mas emEdicaoPor está preenchido, assume bloqueado por segurança
+	    System.out.println("PI bloqueado");
 	    return true;
 	}
 
@@ -56,8 +66,9 @@ public class PedidoInsercaoService {
                 return false;
             }
         }
+        System.out.println("Salvando EmEdição com o usuario: "+usuario);
         pi.setEmEdicaoPor(usuario);
-        System.out.print("Usuario para salvar como edição: "+usuario);
+        System.out.println("Salvando Inicio De Edição: "+new Date());
         pi.setEdicaoInicio(new Date());
         pi.atualizar();
         return true;
@@ -72,5 +83,68 @@ public class PedidoInsercaoService {
         pi.setEmEdicaoPor(null);
         pi.setEdicaoInicio(null);
         pi.atualizar(); 
+    }
+    
+    public static void atualizar(PIDTO pi) throws SQLException {
+        String sql = "UPDATE pi SET " +
+                "cliente_id = ?, agencia_id = ?, veiculo = ?, praca = ?, valorLiquido = ?, repasseVeiculo = ?, imposto = ?, " +
+                "bvAgencia = ?, comissaoPercentual = ?, valorComissao = ?, totalLiquido = ?, " +
+                "midiaResponsavel = ?, percentualIndicacao = ?, midia = ?, liquidoFinal = ?, " +
+                "porcimposto = ?, porcbv = ?, piAgencia = ?, vencimentopiAgencia = ?, " +
+                "checkingEnviado = ?, piI9_id = ?, dataPagamentoParaVeiculo = ?, nfVeiculo = ?, executivo_id = ? " +
+                "WHERE id = ?";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, pi.getClienteId());
+            stmt.setInt(2, pi.getAgenciaId());
+            stmt.setString(3, pi.getVeiculo());
+            stmt.setString(4, pi.getPraca());
+            stmt.setBigDecimal(5, pi.getValorLiquido());
+            stmt.setBigDecimal(6, pi.getRepasseVeiculo());
+            stmt.setBigDecimal(7, pi.getImposto());
+            stmt.setBigDecimal(8, pi.getBvAgencia());
+            stmt.setBigDecimal(9, pi.getComissaoPercentual());
+            stmt.setBigDecimal(10, pi.getValorComissao());
+            stmt.setBigDecimal(11, pi.getTotalLiquido());
+            stmt.setString(12, pi.getMidiaResponsavel());
+            stmt.setBigDecimal(13, pi.getPercentualIndicacao());
+            stmt.setString(14, pi.getMidia());
+            stmt.setBigDecimal(15, pi.getLiquidoFinal());
+            stmt.setBigDecimal(16, pi.getPorcImposto());
+            stmt.setBigDecimal(17, pi.getPorcBV());
+            stmt.setString(18, pi.getPiAgencia());
+
+            if (pi.getVencimentopiAgencia() != null) {
+                stmt.setDate(19, new java.sql.Date(pi.getVencimentopiAgencia().getTime()));
+            } else {
+                stmt.setNull(19, Types.DATE);
+            }
+
+            if (pi.getCheckingEnviado() != null) {
+                stmt.setDate(20, new java.sql.Date(pi.getCheckingEnviado().getTime()));
+            } else {
+                stmt.setNull(20, Types.DATE);
+            }
+
+            if (pi.getPiI9Id() != null) {
+                stmt.setInt(21, pi.getPiI9Id());
+            } else {
+                stmt.setNull(21, Types.INTEGER);
+            }
+
+            if (pi.getDataPagamentoParaVeiculo() != null) {
+                stmt.setDate(22, new java.sql.Date(pi.getDataPagamentoParaVeiculo().getTime()));
+            } else {
+                stmt.setNull(22, Types.DATE);
+            }
+
+            stmt.setString(23, pi.getNfVeiculo());
+            stmt.setInt(24, pi.getExecutivoId());
+            stmt.setInt(25, pi.getId());
+
+            stmt.executeUpdate();
+        }
     }
 }

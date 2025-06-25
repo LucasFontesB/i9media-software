@@ -36,6 +36,33 @@ public class Agencia {
         }
     }
     
+    public static Agencia buscarPorNome(String nomeAgencia) {
+        String sql = "SELECT * FROM agencia WHERE LOWER(nome) = LOWER(?)";
+        Agencia agencia = null;
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            ps.setString(1, nomeAgencia);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    agencia = new Agencia();
+                    agencia.setId(rs.getInt("id"));
+                    agencia.setNome(rs.getString("nome"));
+                    agencia.setCnpj(rs.getString("cnpj"));
+                    agencia.setEndereco(rs.getString("endereco"));
+                    agencia.setContato(rs.getString("contato"));
+                    agencia.setValorBV(rs.getBigDecimal("valor_bv"));
+                }
+            }
+        } catch (Exception e) {
+            CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
+            e.printStackTrace();
+        }
+        return agencia;
+    }
+    
     @Override
     public String toString() {
         return "Agencia{" +
@@ -53,54 +80,56 @@ public class Agencia {
     public boolean salvarNoBanco() {
         String sql = "INSERT INTO agencia (nome, cnpj, endereco, contato, valor_bv) " +
                      "VALUES (?, ?, ?, ?, ?)";
-        PreparedStatement ps = null;
         Connection conn = null;
-        ResultSet rs = null;
         boolean sucesso = false;
 
         try {
             conn = Conectar.getConnection();
             conn.setAutoCommit(false);
 
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, this.nome);
-            ps.setString(2, this.cnpj);
-            ps.setString(3, this.endereco);
-            ps.setString(4, this.contato);
-            ps.setBigDecimal(5, this.valorBV);
+            try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, this.nome);
+                ps.setString(2, this.cnpj);
+                ps.setString(3, this.endereco);
+                ps.setString(4, this.contato);
+                ps.setBigDecimal(5, this.valorBV);
 
-            int linhasAfetadas = ps.executeUpdate();
-            if (linhasAfetadas > 0) {
-                rs = ps.getGeneratedKeys();
-                if (rs.next()) {
-                    this.id = rs.getInt(1);
+                int linhasAfetadas = ps.executeUpdate();
+                if (linhasAfetadas > 0) {
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            this.id = rs.getInt(1);
 
-                    for (Integer executivoId : executivosIds) {
-                        try (PreparedStatement psNn = conn.prepareStatement(
-                            "INSERT INTO executivo_agencia (executivo_id, agencia_id) VALUES (?, ?)")) {
-                            psNn.setInt(1, executivoId);
-                            psNn.setInt(2, this.id);
-                            psNn.executeUpdate();
+                            for (Integer executivoId : executivosIds) {
+                                try (PreparedStatement psNn = conn.prepareStatement(
+                                    "INSERT INTO executivo_agencia (executivo_id, agencia_id) VALUES (?, ?)")) {
+                                    psNn.setInt(1, executivoId);
+                                    psNn.setInt(2, this.id);
+                                    psNn.executeUpdate();
+                                }
+                            }
+
+                            conn.commit();
+                            sucesso = true;
+                            CaixaMensagem.info_box("Cadastro", "Agência cadastrada com sucesso! ID: " + this.id);
                         }
                     }
-
-                    conn.commit();
-                    sucesso = true;
-                    CaixaMensagem.info_box("Cadastro", "Agência cadastrada com sucesso! ID: " + this.id);
+                } else {
+                    conn.rollback();
+                    CaixaMensagem.info_box("Falha", "Nenhuma linha inserida.");
                 }
-            } else {
-                conn.rollback();
-                CaixaMensagem.info_box("Falha", "Nenhuma linha inserida.");
             }
 
         } catch (SQLException e) {
-            try { if (conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            try { 
+                if (conn != null) conn.rollback(); 
+            } catch (SQLException ex) { 
+                ex.printStackTrace(); 
+            }
             CaixaMensagem.info_box("Erro", "Erro ao cadastrar agência: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
-                if (rs != null) rs.close();
-                if (ps != null) ps.close();
                 if (conn != null) {
                     conn.setAutoCommit(true);
                     conn.close();
@@ -115,103 +144,51 @@ public class Agencia {
     
     public static BigDecimal buscarValorBVPorNome(String nomeAgencia) {
         String sql = "SELECT valor_bv FROM agencia WHERE LOWER(nome) = LOWER(?)";
-        PreparedStatement ps = null;
-        Connection conn = null;
-        ResultSet rs = null;
         BigDecimal valorBV = BigDecimal.ZERO;
 
-        try {
-            conn = Conectar.getConnection();
-            ps = conn.prepareStatement(sql);
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
             ps.setString(1, nomeAgencia);
-            rs = ps.executeQuery();
-
-            if (rs.next()) {
-                valorBV = rs.getBigDecimal("valor_bv");
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    valorBV = rs.getBigDecimal("valor_bv");
+                }
             }
         } catch (Exception e) {
             CaixaMensagem.info_box("Erro", "Erro ao buscar BV da agência.");
             e.printStackTrace();
-        } finally {
-            try {
-                if (rs != null) rs.close();
-                if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
 
         return valorBV;
     }
     
-    public static Agencia buscarPorNome(String nomeAgencia) {
-        String sql = "SELECT * FROM agencia WHERE LOWER(nome) = LOWER(?)";
-        PreparedStatement ps = null;
-        Connection conn = null;
-        Agencia agencia = null;
-        
-        try {
-            conn = Conectar.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, nomeAgencia);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                agencia = new Agencia();
-                agencia.setId(Integer.valueOf(rs.getInt("id")));
-                agencia.setNome(rs.getString("nome"));
-                agencia.setCnpj(rs.getString("cnpj"));
-                agencia.setEndereco(rs.getString("endereco"));
-                agencia.setContato(rs.getString("contato"));
-                agencia.setValorBV(rs.getBigDecimal("valor_bv"));
-            } 
-        } catch (Exception e) {
-            CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
-            e.printStackTrace();
-        } finally {
-            try {
-                if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-        return agencia;
-    }
-    
     public static Agencia buscarPorId(Integer id) {
         String sql = "SELECT * FROM agencia WHERE id = ?";
-        PreparedStatement ps = null;
-        Connection conn = null;
         Agencia agencia = null;
-        
-        try {
-            conn = Conectar.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
 
-            if (rs.next()) {
-                agencia = new Agencia();
-                agencia.setId(Integer.valueOf(rs.getInt("id")));
-                agencia.setNome(rs.getString("nome"));
-                agencia.setCnpj(rs.getString("cnpj"));
-                agencia.setEndereco(rs.getString("endereco"));
-                agencia.setContato(rs.getString("contato"));
-                agencia.setValorBV(rs.getBigDecimal("valor_bv"));
-            } 
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    agencia = new Agencia();
+                    agencia.setId(rs.getInt("id"));
+                    agencia.setNome(rs.getString("nome"));
+                    agencia.setCnpj(rs.getString("cnpj"));
+                    agencia.setEndereco(rs.getString("endereco"));
+                    agencia.setContato(rs.getString("contato"));
+                    agencia.setValorBV(rs.getBigDecimal("valor_bv"));
+                }
+            }
         } catch (Exception e) {
             CaixaMensagem.info_box("Erro", "Erro ao buscar agência no banco");
             e.printStackTrace();
-        } finally {
-            try {
-                if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
         }
+
         return agencia;
     }
 

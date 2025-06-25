@@ -26,6 +26,8 @@ public class NavegadorDashboards {
             case "admin":
                 UI.getCurrent().navigate("dashboard-admin");
                 break;
+            case "executivo":
+            	UI.getCurrent().navigate("dashboard-vendas");
             default:
                 UI.getCurrent().navigate("dashboard-geral");
                 break;
