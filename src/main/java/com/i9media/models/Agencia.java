@@ -22,6 +22,29 @@ public class Agencia {
     private Integer executivoPadrao;
     private BigDecimal valorBV;
     
+    public static List<Agencia> buscarTodosNomes() {
+        List<Agencia> agencias = new ArrayList<>();
+
+        String sql = "SELECT id, nome FROM agencia ORDER BY nome";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Agencia agencia = new Agencia();
+                agencia.setId(rs.getInt("id"));
+                agencia.setNome(rs.getString("nome"));
+                agencias.add(agencia);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace(); // ou logar
+        }
+
+        return agencias;
+    }
+    
     public static boolean existePorNome(String nome) {
         String sql = "SELECT 1 FROM agencia WHERE LOWER(nome) = LOWER(?)";
         try (Connection conn = Conectar.getConnection();

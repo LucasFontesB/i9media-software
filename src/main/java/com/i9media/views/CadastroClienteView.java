@@ -81,4 +81,66 @@ public class CadastroClienteView extends Dialog {
 
         add(layout);
     }
+    
+    public CadastroClienteView() {
+        setCloseOnOutsideClick(false);
+        setHeaderTitle("Cadastrar Cliente");
+
+        nomeField.setWidthFull();
+        enderecoField.setWidthFull();
+        contatoField.setWidthFull();
+
+        HorizontalLayout botoesLayout = new HorizontalLayout(salvarButton, cancelarButton);
+        botoesLayout.setJustifyContentMode(JustifyContentMode.END);
+        botoesLayout.setWidthFull();
+
+        salvarButton.addClickListener(e -> {
+            String nome = nomeField.getValue();
+            String endereco = enderecoField.getValue();
+            String contato = contatoField.getValue();
+
+            if (nome == null || nome.trim().isEmpty()
+                    || endereco == null || endereco.trim().isEmpty()
+                    || contato == null || contato.trim().isEmpty()) {
+
+                Notification.show("Preencha todos os campos obrigatórios.", 1500, Notification.Position.MIDDLE);
+                return;
+            }
+
+            if (Cliente.existePorNomeIgnoreCase(nome)) {
+                Notification.show("Já existe um cliente com esse nome.", 1500, Notification.Position.MIDDLE);
+                return;
+            }
+
+            try {
+                Cliente cliente = new Cliente();
+                cliente.setNome(nome.trim());
+                cliente.setEndereco(endereco.trim());
+                cliente.setContato(contato.trim());
+
+                if (cliente.salvarNoBanco()) {
+                	Notification.show("Cliente cadastrado com sucesso.", 3000, Notification.Position.MIDDLE);
+                    close();
+                } else {
+                    Notification.show("Falha ao cadastrar cliente.", 3000, Notification.Position.MIDDLE);
+                }
+            } catch (Exception ex) {
+                Notification.show("Erro ao salvar dados: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+                ex.printStackTrace();
+            }
+        });
+
+        cancelarButton.addClickListener(e -> close());
+
+        VerticalLayout layout = new VerticalLayout(
+            nomeField,
+            enderecoField,
+            contatoField,
+            botoesLayout
+        );
+        layout.setPadding(true);
+        layout.setSpacing(true);
+
+        add(layout);
+    }
 }

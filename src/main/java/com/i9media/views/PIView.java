@@ -2,9 +2,12 @@ package com.i9media.views;
 
 import com.i9media.Service.PedidoInsercaoService;
 import com.i9media.models.*;
+import com.i9media.utils.PIUpdateBroadcaster;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -16,7 +19,6 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
-import com.vaadin.flow.data.converter.StringToIntegerConverter;
 import com.vaadin.flow.server.VaadinSession;
 
 import java.math.BigDecimal;
@@ -26,12 +28,13 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class PIView extends Dialog {
 	
-	private final TextField clienteField = new TextField("Cliente");
-	private final TextField agenciaField = new TextField("Agência");
-	private final TextField executivoField = new TextField("Executivo Responsável");
+	private final ComboBox<Cliente> clienteField = new ComboBox<>("Cliente");
+	private final ComboBox<Agencia> agenciaField = new ComboBox<>("Agência");
+	private final ComboBox<Executivo> executivoField = new ComboBox<>("Executivo Responsável");
 
 	private final TextField veiculo = new TextField("Veículo");
 	private final TextField praca = new TextField("Praça");
@@ -46,7 +49,7 @@ public class PIView extends Dialog {
 
 	private final TextField midiaResponsavel = new TextField("Mídia Responsável");
 	private final NumberField percentualIndicacao = new NumberField("% Indicação");
-	private final TextField midia = new TextField("Mídia");
+	private final NumberField midia = new NumberField("Valor Indicação");
 	private final NumberField liquidoFinal = new NumberField("Líquido Final");
 
 	private final NumberField porcImposto = new NumberField("% Imposto");
@@ -63,6 +66,7 @@ public class PIView extends Dialog {
     private final Button editarButton = new Button("🛠️ Editar");
     private final Button salvarButton = new Button("💾 Salvar");
     private final Button cancelarButton = new Button("❌ Cancelar");
+    private Button deletarButton = new Button("🗑️ Deletar");
 
     private final Binder<PIDTO> binder = new Binder<>(PIDTO.class);
     private final PIDTO original;
@@ -70,6 +74,19 @@ public class PIView extends Dialog {
     private final Runnable atualizarCardCallback;
 
     public PIView(PIDTO pi, Runnable atualizarCardCallback) throws SQLException {
+    	addDetachListener(event -> {
+    	    try {
+    	        Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
+    	        if (usuarioLogado != null && usuarioLogado.getUsuario().equals(pi.getEmEdicaoPor())) {
+    	            PedidoInsercaoService.liberarBloqueio(pi.getId());
+    	            System.out.println("PI desbloqueado ao fechar a janela.");
+    	        }
+    	    } catch (SQLException e) {
+    	        e.printStackTrace();
+    	        Notification.show("Erro ao liberar bloqueio da PI ao fechar.", 3000, Notification.Position.MIDDLE);
+    	    }
+    	});
+    	
     	binder.setBean(pi);
         this.original = new PIDTO(pi);
         this.atualizarCardCallback = atualizarCardCallback;
@@ -91,22 +108,33 @@ public class PIView extends Dialog {
                 setReadOnly(true);
                 editarButton.setEnabled(false);
                 salvarButton.setEnabled(false);
+                deletarButton.setEnabled(false);
             }
         } else {
             Notification.show("Este PI não está em edição.");
             setReadOnly(true);
             editarButton.setEnabled(true);
             salvarButton.setEnabled(false);
+            deletarButton.setEnabled(true);
         }
         
-        Cliente cliente = Cliente.buscarPorId(pi.getClienteId());
-        clienteField.setValue(cliente != null ? cliente.getNome() : "Desconhecido");
+        clienteField.setItems(Cliente.buscarTodosNomes());
+        clienteField.setItemLabelGenerator(Cliente::getNome);
 
-        Agencia agencia = Agencia.buscarPorId(pi.getAgenciaId());
-        agenciaField.setValue(agencia != null ? agencia.getNome() : "Desconhecida");
+        agenciaField.setItems(Agencia.buscarTodosNomes());
+        agenciaField.setItemLabelGenerator(Agencia::getNome);
 
-        Executivo executivo = Executivo.buscarPorId(pi.getExecutivoId());
-        executivoField.setValue(executivo != null ? executivo.getNome() : "Desconhecido");
+        executivoField.setItems(Executivo.buscarTodosNomes());
+        executivoField.setItemLabelGenerator(Executivo::getNome);
+
+        Cliente clientes = Cliente.buscarPorId(pi.getClienteId());
+        clienteField.setValue(clientes);
+
+        Agencia agencias = Agencia.buscarPorId(pi.getAgenciaId());
+        agenciaField.setValue(agencias);
+
+        Executivo executivos = Executivo.buscarPorId(pi.getExecutivoId());
+        executivoField.setValue(executivos);
 
         setCloseOnEsc(true);
         setCloseOnOutsideClick(false);
@@ -116,11 +144,9 @@ public class PIView extends Dialog {
 
         FormLayout formLayout = new FormLayout(
         		clienteField, agenciaField,executivoField,
-                veiculo, praca, midia, midiaResponsavel,
+                veiculo, praca, midiaResponsavel, percentualIndicacao, midia,
                 valorLiquido, repasseVeiculo, porcImposto, imposto,
-                porcBV, bvAgencia, comissaoPercentual, valorComissao,
-                totalLiquido, liquidoFinal, percentualIndicacao,
-                piAgencia,
+                porcBV, bvAgencia, totalLiquido, liquidoFinal, piAgencia,
                 vencimentoPiAgencia, checkingEnviado,
                 piI9Id, dataPagamentoParaVeiculo, nfVeiculo
         );
@@ -131,6 +157,26 @@ public class PIView extends Dialog {
         );
 
         // Bind fields
+        binder.forField(clienteField)
+        .withValidator(Objects::nonNull, "Cliente obrigatório")
+        .bind(
+            piDto -> Cliente.buscarPorId(piDto.getClienteId()),
+            (piDto, cliente) -> piDto.setClienteId(cliente != null ? cliente.getId() : null)
+        );
+
+        binder.forField(agenciaField)
+        .withValidator(Objects::nonNull, "Agência obrigatória")
+        .bind(
+            piDto -> Agencia.buscarPorId(piDto.getAgenciaId()),
+            (piDto, agencia) -> piDto.setAgenciaId(agencia != null ? agencia.getId() : null)
+        );
+
+        binder.forField(executivoField)
+        .withValidator(Objects::nonNull, "Executivo obrigatório")
+        .bind(
+            piDto -> Executivo.buscarPorId(piDto.getExecutivoId()),
+            (piDto, executivo) -> piDto.setExecutivoId(executivo != null ? executivo.getId() : null)
+        );
         
         binder.forField(veiculo).bind(PIDTO::getVeiculo, PIDTO::setVeiculo);
         binder.forField(praca).bind(PIDTO::getPraca, PIDTO::setPraca);
@@ -151,7 +197,8 @@ public class PIView extends Dialog {
         binder.forField(midiaResponsavel).bind(PIDTO::getMidiaResponsavel, PIDTO::setMidiaResponsavel);
         binder.forField(percentualIndicacao).bind(
                 piDto -> toDouble(piDto.getPercentualIndicacao()), (piDto, value) -> piDto.setPercentualIndicacao(toBigDecimal(value)));
-        binder.forField(midia).bind(PIDTO::getMidia, PIDTO::setMidia);
+        binder.forField(midia).bind(
+                piDto -> toDouble(piDto.getMidia()), (piDto, value) -> piDto.setMidia(toBigDecimal(value)));
         binder.forField(liquidoFinal).bind(
                 piDto -> toDouble(piDto.getLiquidoFinal()), (piDto, value) -> piDto.setLiquidoFinal(toBigDecimal(value)));
         binder.forField(porcImposto).bind(
@@ -195,62 +242,71 @@ public class PIView extends Dialog {
         
         ValueChangeListener<AbstractField.ComponentValueChangeEvent<NumberField, Double>> recalcular = e -> atualizarCamposCalculados();
         valorLiquido.addValueChangeListener(recalcular);
+        repasseVeiculo.addValueChangeListener(recalcular);
+        valorComissao.addValueChangeListener(recalcular);
         porcImposto.addValueChangeListener(recalcular);
         porcBV.addValueChangeListener(recalcular);
-        
-        clienteField.addValueChangeListener(e -> {
-            String nomeClienteB = clienteField.getValue();
-            System.out.println("nome clienteb: "+ nomeClienteB);
-            if (nomeClienteB != null && !nomeClienteB.trim().isEmpty()) {
-                Cliente cliente1 = Cliente.buscarPorNome(nomeClienteB.trim());
+        percentualIndicacao.addValueChangeListener(recalcular);
 
-                if (cliente1 == null) {
-                    CadastroClienteView cadastroClienteView = new CadastroClienteView(nomeClienteB.trim());
-                    cadastroClienteView.addOpenedChangeListener(event -> {
-                        if (!event.isOpened()) { // Quando o diálogo for fechado
-                            String nomeAtual = clienteField.getValue();
-                            if (nomeAtual != null && !nomeAtual.trim().isEmpty()) {
-                                Cliente clienteVerificado = Cliente.buscarPorNome(nomeAtual.trim());
-                                if (clienteVerificado != null) {
-                                    binder.getBean().setClienteId(clienteVerificado.getId());
-                                }
+        
+        clienteField.addCustomValueSetListener(event -> {
+            String nomeDigitado = event.getDetail().trim();
+            if (!nomeDigitado.isEmpty()) {
+                Cliente clienteExistente = Cliente.buscarPorNome(nomeDigitado);
+                if (clienteExistente == null) {
+                    CadastroClienteView cadastroClienteView = new CadastroClienteView(nomeDigitado);
+                    cadastroClienteView.addOpenedChangeListener(ev -> {
+                        if (!ev.isOpened()) { 
+                            Cliente clienteVerificado = Cliente.buscarPorNome(nomeDigitado);
+                            if (clienteVerificado != null) {
+                                clienteField.setValue(clienteVerificado); 
+                                binder.getBean().setClienteId(clienteVerificado.getId());
                             }
                         }
                     });
                     cadastroClienteView.open();
-
                     Notification.show("Cliente não cadastrado.", 1500, Notification.Position.MIDDLE);
-                    return;
+                } else {
+                    clienteField.setValue(clienteExistente);
+                    binder.getBean().setClienteId(clienteExistente.getId());
                 }
-
-                binder.getBean().setClienteId(cliente1.getId());
             }
         });
         
-        agenciaField.addValueChangeListener(e -> {
-            String nomeAgencia = agenciaField.getValue();
-            if (nomeAgencia != null && !nomeAgencia.trim().isEmpty()) {
-                Agencia agencia1 = Agencia.buscarPorNome(nomeAgencia.trim());
+        agenciaField.setAllowCustomValue(true);
 
-                if (agencia1 == null) {
-                	CadastroAgenciaView cadastroView = new CadastroAgenciaView(nomeAgencia.trim());
-                	cadastroView.addOpenedChangeListener(event -> {
-                	    if (!event.isOpened()) { // Dialog fechado
-                	        String nomeAtual = agenciaField.getValue();
-                	        if (nomeAtual != null && !nomeAtual.trim().isEmpty()) {
-                	            atualizarCamposAgencia(nomeAtual);
-                	        }
-                	    }
-                	});
-                	cadastroView.open();
-
+        agenciaField.addCustomValueSetListener(event -> {
+            String nomeDigitado = event.getDetail().trim();
+            if (!nomeDigitado.isEmpty()) {
+                Agencia agenciaExistente = Agencia.buscarPorNome(nomeDigitado);
+                if (agenciaExistente == null) {
+                    CadastroAgenciaView cadastroView = new CadastroAgenciaView(nomeDigitado);
+                    cadastroView.addOpenedChangeListener(ev -> {
+                        if (!ev.isOpened()) {
+                            Agencia agenciaVerificada = Agencia.buscarPorNome(nomeDigitado);
+                            if (agenciaVerificada != null) {
+                                agenciaField.setValue(agenciaVerificada);
+                                atualizarCamposAgencia(nomeDigitado);
+                            }
+                        }
+                    });
+                    cadastroView.open();
                     Notification.show("Agência não cadastrada.", 1500, Notification.Position.MIDDLE);
-                    return;
+                } else {
+                    agenciaField.setValue(agenciaExistente);
+                    atualizarCamposAgencia(nomeDigitado);
                 }
-
-                atualizarCamposAgencia(nomeAgencia);
+            }
+        });
+        
+        agenciaField.addValueChangeListener(event -> {
+            Agencia agenciaSelecionada = event.getValue();
+            if (agenciaSelecionada != null) {
+                // Atualiza campos com base na agência selecionada
+                atualizarCamposAgencia(agenciaSelecionada.getNome());
             } else {
-            	porcBV.clear();
+                // Limpar campos caso nenhuma agência esteja selecionada
+                porcBV.clear();
                 executivoField.clear();
             }
         });
@@ -258,11 +314,15 @@ public class PIView extends Dialog {
         editarButton.addClickListener(e -> {
             try {
                 boolean bloqueado = PedidoInsercaoService.tentarBloquearParaEdicao(pi.getId(), usuarioLogado.getUsuario());
+
                 if (atualizarCardCallback != null) {
                     atualizarCardCallback.run();
                 }
 
                 if (bloqueado) {
+                    // Atualiza o objeto local com o usuário atual como editor
+                    pi.setEmEdicaoPor(usuarioLogado.getUsuario());
+
                     Notification.show("PI bloqueado com sucesso. Você pode editar.");
                     setReadOnly(false);
                     salvarButton.setEnabled(true);
@@ -277,19 +337,43 @@ public class PIView extends Dialog {
                 Notification.show("Erro ao tentar bloquear PI para edição.");
             }
         });
+        
+        deletarButton.addClickListener(event -> {
+            ConfirmDialog dialog = new ConfirmDialog(
+                "Confirmar exclusão",
+                "Tem certeza que deseja deletar este Pedido de Inserção? Esta ação não pode ser desfeita.",
+                "Deletar",
+                confirmEvent -> {
+                    try {
+                        PedidoInsercaoService.deletar(pi.getId()); 
+                        Notification.show("Pedido de Inserção deletado com sucesso.", 3000, Notification.Position.TOP_CENTER);
+                        if (atualizarCardCallback != null) {
+                            atualizarCardCallback.run();
+                        }
+                        PIUpdateBroadcaster.broadcast();
+                        close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        Notification.show("Erro ao deletar Pedido de Inserção: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+                    }
+                },
+                "Cancelar",
+                cancelEvent -> {
+                }
+            );
+            dialog.open();
+        });
 
         salvarButton.addClickListener(e -> {
-        	String nomeAgenciaSalvar = agenciaField.getValue();
-        	String nomeClienteSalvar = clienteField.getValue();
-        	String nomeExecutivoSalvar = executivoField.getValue();
-        	Agencia agenciaSalvar = Agencia.buscarPorNome(nomeAgenciaSalvar.trim());
-            Cliente clienteSalvar = Cliente.buscarPorNome(nomeClienteSalvar.trim());
-            Executivo executivoSalvar = Executivo.buscarPorNome(nomeExecutivoSalvar.trim());
+            Agencia agenciaSalvar = agenciaField.getValue();
+            Cliente clienteSalvar = clienteField.getValue();
+            Executivo executivoSalvar = executivoField.getValue();
 
             if (agenciaSalvar == null || clienteSalvar == null || executivoSalvar == null) {
                 Notification.show("Cliente, agência ou executivo não cadastrado.", 2000, Notification.Position.MIDDLE);
                 return;
             }
+
             try {
                 pi.setClienteId(clienteSalvar.getId());
                 pi.setAgenciaId(agenciaSalvar.getId());
@@ -337,7 +421,7 @@ public class PIView extends Dialog {
             }
         });
 
-        HorizontalLayout buttonBar = new HorizontalLayout(cancelarButton, editarButton, salvarButton);
+        HorizontalLayout buttonBar = new HorizontalLayout(cancelarButton, editarButton, salvarButton, deletarButton);
         buttonBar.setSpacing(true);
 
         VerticalLayout layout = new VerticalLayout(title, formLayout, buttonBar);
@@ -349,74 +433,105 @@ public class PIView extends Dialog {
     }
     
     private void atualizarCamposCalculados() {
-        if (valorLiquido.getValue() == null) return;
+        if (totalLiquido.getValue() == null) return;
 
-        BigDecimal valorLiquido1 = BigDecimal.valueOf(valorLiquido.getValue());
+        BigDecimal valorLiquido = BigDecimal.valueOf(totalLiquido.getValue());
+        BigDecimal repasse = repasseVeiculo.getValue() != null
+            ? BigDecimal.valueOf(repasseVeiculo.getValue()) : BigDecimal.ZERO;
+        BigDecimal comissao = valorComissao.getValue() != null
+            ? BigDecimal.valueOf(valorComissao.getValue()) : BigDecimal.ZERO;
 
-        Double percImp = porcImposto.getValue();
-        BigDecimal impostoDecimal = percImp != null
-            ? BigDecimal.valueOf(percImp).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
+        BigDecimal impostoDecimal = porcImposto.getValue() != null
+            ? BigDecimal.valueOf(porcImposto.getValue()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-        Double percBV = porcBV.getValue();
-        BigDecimal bvDecimal = percBV != null
-            ? BigDecimal.valueOf(percBV).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
+        BigDecimal bvDecimal = porcBV.getValue() != null
+            ? BigDecimal.valueOf(porcBV.getValue()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-        BigDecimal valorImposto = valorLiquido1.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal valorBV = valorLiquido1.multiply(bvDecimal).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal valorImposto = valorLiquido.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal valorBV = valorLiquido.multiply(bvDecimal).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal total = valorLiquido
+            .subtract(repasse)
+            .subtract(valorImposto)
+            .subtract(valorBV)
+            .add(comissao)
+            .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal percInd = percentualIndicacao.getValue() != null
+            ? BigDecimal.valueOf(percentualIndicacao.getValue()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
+            : BigDecimal.ZERO;
+
+        BigDecimal valorIndicacao = total.multiply(percInd).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal liquidoFinalCalc = total.subtract(valorIndicacao).setScale(2, RoundingMode.HALF_UP);
 
         imposto.setValue(valorImposto.doubleValue());
         bvAgencia.setValue(valorBV.doubleValue());
+        midia.setValue(valorIndicacao.doubleValue());
+        totalLiquido.setValue(total.doubleValue());
+        liquidoFinal.setValue(liquidoFinalCalc.doubleValue());
     }
     
     private void atualizarCamposAgencia(String nomeAgencia) {
         Agencia agencia = Agencia.buscarPorNome(nomeAgencia.trim());
         if (agencia == null) {
-        	porcBV.clear();
+            porcBV.clear();
             executivoField.clear();
+            executivoField.setItems(); // Limpar itens
             return;
         }
 
         porcBV.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
 
+        // Buscar executivos da agência (lista)
+        List<Executivo> executivosDaAgencia = Executivo.buscarExecutivoPorAgencia(agencia.getId());
+
+        if (executivosDaAgencia.isEmpty()) {
+            executivoField.clear();
+            executivoField.setItems(); // Limpa os itens
+            Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
+            return;
+        }
+
+        // Popular o ComboBox com os executivos da agência
+        executivoField.setItems(executivosDaAgencia);
+
+        // Se existir um executivo padrão, seleciona ele
         Executivo executivoResponsavel = null;
         if (agencia.getExecutivoPadrao() != null) {
             executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
         }
 
-        if (executivoResponsavel == null) {
-            executivoResponsavel = Executivo.buscarExecutivoPorAgencia(agencia.getId());
+        // Se executivo padrão não está na lista, pode escolher o primeiro
+        if (executivoResponsavel == null || !executivosDaAgencia.contains(executivoResponsavel)) {
+            executivoResponsavel = executivosDaAgencia.get(0);
         }
 
-        if (executivoResponsavel != null) {
-            executivoField.setValue(executivoResponsavel.getNome());
-        } else {
-            executivoField.clear();
-            Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
-        }
+        executivoField.setValue(executivoResponsavel);
     }
     
 
     private void setReadOnly(boolean readOnly) {
+        imposto.setReadOnly(true);
+        bvAgencia.setReadOnly(true);
+        porcImposto.setReadOnly(true);
+        porcBV.setReadOnly(true);
+        comissaoPercentual.setReadOnly(true);
+        valorComissao.setReadOnly(true);
+        totalLiquido.setReadOnly(true);
+        midia.setReadOnly(true);
+        liquidoFinal.setReadOnly(true);
+        executivoField.setReadOnly(true);
+
         clienteField.setReadOnly(readOnly);
         agenciaField.setReadOnly(readOnly);
-        executivoField.setReadOnly(readOnly);
         veiculo.setReadOnly(readOnly);
         praca.setReadOnly(readOnly);
         valorLiquido.setReadOnly(readOnly);
         repasseVeiculo.setReadOnly(readOnly);
-        imposto.setReadOnly(readOnly);
-        bvAgencia.setReadOnly(readOnly);
-        comissaoPercentual.setReadOnly(readOnly);
-        valorComissao.setReadOnly(readOnly);
-        totalLiquido.setReadOnly(readOnly);
         midiaResponsavel.setReadOnly(readOnly);
         percentualIndicacao.setReadOnly(readOnly);
-        midia.setReadOnly(readOnly);
-        liquidoFinal.setReadOnly(readOnly);
-        porcImposto.setReadOnly(readOnly);
-        porcBV.setReadOnly(readOnly);
         piAgencia.setReadOnly(readOnly);
         vencimentoPiAgencia.setReadOnly(readOnly);
         checkingEnviado.setReadOnly(readOnly);

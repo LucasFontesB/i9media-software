@@ -34,7 +34,7 @@ public class PedidoInsercao {
     private BigDecimal totalLiquido;
     private String midiaResponsavel;
     private BigDecimal percentualIndicacao;
-    private String midia;
+    private BigDecimal midia;
     private BigDecimal liquidoFinal;
 
     private BigDecimal porcImposto;
@@ -97,8 +97,8 @@ public class PedidoInsercao {
     public BigDecimal getPercentualIndicacao() { return percentualIndicacao; }
     public void setPercentualIndicacao(BigDecimal percentualIndicacao) { this.percentualIndicacao = percentualIndicacao; }
 
-    public String getMidia() { return midia; }
-    public void setMidia(String midia) { this.midia = midia; }
+    public BigDecimal getMidia() { return midia; }
+    public void setMidia(BigDecimal midia) { this.midia = midia; }
 
     public BigDecimal getLiquidoFinal() { return liquidoFinal; }
     public void setLiquidoFinal(BigDecimal liquidoFinal) { this.liquidoFinal = liquidoFinal; }
@@ -179,7 +179,7 @@ public class PedidoInsercao {
                 pi.setTotalLiquido(rs.getBigDecimal("totalLiquido"));
                 pi.setMidiaResponsavel(rs.getString("midiaResponsavel"));
                 pi.setPercentualIndicacao(rs.getBigDecimal("percentualIndicacao"));
-                pi.setMidia(rs.getString("midia"));
+                pi.setMidia(rs.getBigDecimal("midia"));
                 pi.setLiquidoFinal(rs.getBigDecimal("liquidoFinal"));
                 pi.setPorcImposto(rs.getBigDecimal("porcimposto"));
                 pi.setPorcBV(rs.getBigDecimal("porcbv"));
@@ -256,7 +256,7 @@ public class PedidoInsercao {
                 pi.setTotalLiquido(rs.getBigDecimal("totalLiquido"));
                 pi.setMidiaResponsavel(rs.getString("midiaResponsavel"));
                 pi.setPercentualIndicacao(rs.getBigDecimal("percentualIndicacao"));
-                pi.setMidia(rs.getString("midia"));
+                pi.setMidia(rs.getBigDecimal("midia"));
                 pi.setLiquidoFinal(rs.getBigDecimal("liquidoFinal"));
                 pi.setPorcImposto(rs.getBigDecimal("porcimposto"));
                 pi.setPorcBV(rs.getBigDecimal("porcbv"));
@@ -350,7 +350,7 @@ public class PedidoInsercao {
             stmt.setBigDecimal(12, this.totalLiquido);
             stmt.setString(13, this.midiaResponsavel);
             stmt.setBigDecimal(14, this.percentualIndicacao); 
-            stmt.setString(15, this.midia);
+            stmt.setBigDecimal(15, this.midia);
             stmt.setBigDecimal(16, this.liquidoFinal); 
             stmt.setBigDecimal(17, this.porcImposto);
             stmt.setBigDecimal(18, this.porcBV);

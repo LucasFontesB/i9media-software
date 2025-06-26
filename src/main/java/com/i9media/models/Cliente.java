@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.i9media.Conectar;
 
@@ -15,6 +17,28 @@ public class Cliente {
 
 
     public Cliente() {
+    }
+    
+    public static List<Cliente> buscarTodosNomes() {
+        List<Cliente> clientes = new ArrayList<>();
+        String sql = "SELECT id, nome FROM clientes ORDER BY nome";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Cliente cliente = new Cliente();
+                cliente.setId(rs.getInt("id"));
+                cliente.setNome(rs.getString("nome"));
+                clientes.add(cliente);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return clientes;
     }
 
 

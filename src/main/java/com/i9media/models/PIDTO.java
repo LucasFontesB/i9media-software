@@ -25,7 +25,7 @@ public class PIDTO {
     private BigDecimal totalLiquido;
     private String midiaResponsavel;
     private BigDecimal percentualIndicacao;
-    private String midia;
+    private BigDecimal midia;
     private BigDecimal liquidoFinal;
 
     private BigDecimal porcImposto;
@@ -237,11 +237,11 @@ public class PIDTO {
         this.percentualIndicacao = percentualIndicacao;
     }
 
-    public String getMidia() {
+    public BigDecimal getMidia() {
         return midia;
     }
 
-    public void setMidia(String midia) {
+    public void setMidia(BigDecimal midia) {
         this.midia = midia;
     }
 

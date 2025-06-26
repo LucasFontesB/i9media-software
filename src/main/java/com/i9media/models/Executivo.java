@@ -1,9 +1,12 @@
 package com.i9media.models;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.i9media.Conectar;
 
@@ -11,17 +14,42 @@ import com.i9media.Conectar;
 public class Executivo {
     private Integer id;
     private String nome;
+    private BigDecimal porcGanho;
 
     public Executivo() {
     }
+    
+    public static List<Executivo> buscarTodosNomes() {
+        List<Executivo> executivos = new ArrayList<>();
+
+        String sql = "SELECT id, nome FROM executivos ORDER BY nome";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Executivo executivo = new Executivo();
+                executivo.setId(rs.getInt("id"));
+                executivo.setNome(rs.getString("nome"));
+                executivos.add(executivo);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace(); 
+        }
+
+        return executivos;
+    }
 
     public boolean salvarNoBanco() throws SQLException {
-        String sql = "INSERT INTO executivos (nome) VALUES (?)";
+        String sql = "INSERT INTO executivos (nome, porcganhos) VALUES (?, ?)";
         try (
             Connection conn = Conectar.getConnection();
             PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)
         ) {
             ps.setString(1, this.nome);
+            ps.setBigDecimal(2, porcGanho);
             int linhasAfetadas = ps.executeUpdate();
             if (linhasAfetadas > 0) {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -36,45 +64,26 @@ public class Executivo {
     }
 
     public static Executivo buscarPorNome(String nome) {
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        Executivo executivo = null;
+        String sql = "SELECT id, nome, porcganhos FROM executivos WHERE LOWER(nome) = LOWER(?)";
 
-        if (nome == null || nome.trim().isEmpty()) {
-            return null;
-        }
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        try {
-        	conn = Conectar.getConnection();
+            stmt.setString(1, nome.trim());
 
-            String sql = "SELECT id, nome FROM executivos WHERE nome = ?";
-            stmt = conn.prepareStatement(sql);
-            stmt.setString(1, nome);
-
-            rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                executivo = new Executivo();
-                executivo.setId(rs.getInt("id"));
-                executivo.setNome(rs.getString("nome"));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Executivo e = new Executivo();
+                    e.setId(rs.getInt("id"));
+                    e.setNome(rs.getString("nome"));
+                    e.setPorcGanho(rs.getBigDecimal("porcganhos"));
+                    return e;
+                }
             }
-
         } catch (SQLException e) {
-            System.err.println("Erro ao buscar executivo por nome: " + e.getMessage());
             e.printStackTrace();
-        } finally {
-            try {
-                if (rs != null) rs.close();
-                if (stmt != null) stmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.err.println("Erro ao fechar recursos: " + e.getMessage());
-                e.printStackTrace();
-            }
         }
-        System.out.println("Executivo: "+executivo);
-        return executivo;
+        return null;
     }
 
     public static Executivo buscarPorId(Integer id) {
@@ -89,7 +98,7 @@ public class Executivo {
 
         try {
         	conn = Conectar.getConnection();
-            String sql = "SELECT id, nome FROM executivos WHERE id = ?";
+            String sql = "SELECT id, nome, porcganhos FROM executivos WHERE id = ?";
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, id);
             rs = stmt.executeQuery();
@@ -98,6 +107,7 @@ public class Executivo {
                 executivo = new Executivo();
                 executivo.setId(rs.getInt("id"));
                 executivo.setNome(rs.getString("nome"));
+                executivo.setPorcGanho(rs.getBigDecimal("porcganhos"));
             }
         } catch (SQLException e) {
             System.err.println("Erro ao buscar executivo por ID: " + e.getMessage());
@@ -126,26 +136,28 @@ public class Executivo {
         }
     }
     
-    public static Executivo buscarExecutivoPorAgencia(Integer agenciaId) {
-        Executivo executivo = null;
-        String sql = "SELECT e.id, e.nome FROM executivos e " +
+    public static List<Executivo> buscarExecutivoPorAgencia(Integer agenciaId) {
+        List<Executivo> executivos = new ArrayList<>();
+        String sql = "SELECT e.id, e.nome, e.porcganhos FROM executivos e " +
                      "JOIN executivo_agencia ea ON e.id = ea.executivo_id " +
-                     "WHERE ea.agencia_id = ? LIMIT 1";
+                     "WHERE ea.agencia_id = ?";
 
         try (Connection conn = Conectar.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, agenciaId);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    executivo = new Executivo();
+                while (rs.next()) {
+                    Executivo executivo = new Executivo();
                     executivo.setId(rs.getInt("id"));
                     executivo.setNome(rs.getString("nome"));
+                    executivo.setPorcGanho(rs.getBigDecimal("porcganhos"));
+                    executivos.add(executivo);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return executivo;
+        return executivos;
     }
 
     public Integer getId() {
@@ -154,6 +166,14 @@ public class Executivo {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+    
+    public BigDecimal getPorcGanho() {
+    	return porcGanho;
+    }
+    
+    public void setPorcGanho(BigDecimal porcGanho) {
+    	this.porcGanho = porcGanho;
     }
 
     public String getNome() {

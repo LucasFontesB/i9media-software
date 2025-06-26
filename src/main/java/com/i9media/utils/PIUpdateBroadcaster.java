@@ -19,13 +19,17 @@ public class PIUpdateBroadcaster {
     public static void broadcast() {
         for (UI ui : listeners) {
             ui.access(() -> {
-                if (ui.getChildren().anyMatch(c -> c instanceof DashboardOpecView)) {
-                    DashboardOpecView view = (DashboardOpecView) ui.getChildren()
-                        .filter(c -> c instanceof DashboardOpecView)
-                        .findFirst()
-                        .get();
-                    view.atualizarCard(); 
-                }
+                ui.getChildren().forEach(component -> {
+
+                    if (component instanceof DashboardOpecView) {
+                        ((DashboardOpecView) component).atualizarCard();
+                    }
+
+                    if (component instanceof DashboardOpecView) {
+                        ((DashboardOpecView) component).atualizarGrid();
+                    }
+
+                });
             });
         }
     }

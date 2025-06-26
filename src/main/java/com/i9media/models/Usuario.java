@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import com.i9media.CaixaMensagem;
 import com.i9media.Conectar;
@@ -14,9 +15,37 @@ public class Usuario {
 	private String usuario;
 	private String senha;
 	private String email;
+	private Executivo executivo;
 	private String departamento;
 	private Date criado_em;
 	private boolean ativo;
+	
+	public static boolean salvarUsuario(Usuario usuario) {
+        String sql = "INSERT INTO usuarios (nome, usuario, senha, email, departamento, executivo_id) VALUES (?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, usuario.getNome());
+            stmt.setString(2, usuario.getUsuario());
+            stmt.setString(3, usuario.getSenha());
+            stmt.setString(4, usuario.getEmail());
+            stmt.setString(5, usuario.getDepartamento());
+
+            if (usuario.getExecutivo() != null && usuario.getExecutivo().getId() != null) {
+                stmt.setInt(6, usuario.getExecutivo().getId());
+            } else {
+                stmt.setNull(6, java.sql.Types.INTEGER);
+            }
+
+            int linhasAfetadas = stmt.executeUpdate();
+            return linhasAfetadas > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 	
 	public static Usuario Iniciar_Usuario(int id) {
 	    String sql = "SELECT * FROM usuarios WHERE id = ?";
@@ -49,6 +78,13 @@ public class Usuario {
 
 	    return usuario_logado;
 	}
+	
+	public Executivo getExecutivo() {
+        return executivo;
+    }
+    public void setExecutivo(Executivo executivo) {
+        this.executivo = executivo;
+    }
 	
 	public String getId() {
         return id;

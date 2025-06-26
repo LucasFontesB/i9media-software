@@ -48,6 +48,21 @@ public class PedidoInsercaoService {
 	    System.out.println("PI bloqueado");
 	    return true;
 	}
+	
+	public static void deletar(Integer piId) throws SQLException {
+        String sql = "DELETE FROM pi WHERE id = ?";
+        
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, piId);
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected == 0) {
+                throw new SQLException("Nenhum registro encontrado para exclusão com o ID: " + piId);
+            }
+        }
+    }
 
     public static boolean tentarBloquearParaEdicao(Integer piId, String usuario) throws SQLException {
         PedidoInsercao pi = PedidoInsercao.buscarPorId(piId);
@@ -110,7 +125,7 @@ public class PedidoInsercaoService {
             stmt.setBigDecimal(11, pi.getTotalLiquido());
             stmt.setString(12, pi.getMidiaResponsavel());
             stmt.setBigDecimal(13, pi.getPercentualIndicacao());
-            stmt.setString(14, pi.getMidia());
+            stmt.setBigDecimal(14, pi.getMidia());
             stmt.setBigDecimal(15, pi.getLiquidoFinal());
             stmt.setBigDecimal(16, pi.getPorcImposto());
             stmt.setBigDecimal(17, pi.getPorcBV());

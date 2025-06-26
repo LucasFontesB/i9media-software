@@ -75,6 +75,20 @@ public class DashboardOpecView extends Dashboard{
 	        	AdicionarPI adicionarPI = new AdicionarPI(() -> atualizarCard());
 	        	adicionarPI.open();
 	        });
+	        Button btnAdicionarAgencia = new Button("Adicionar Agencia", event -> {
+	        	CadastroAgenciaView adicionarAgencia = new CadastroAgenciaView();
+	        	adicionarAgencia.open();
+	        });
+	        Button btnAdicionarCliente = new Button("Adicionar Cliente", event -> {
+	        	CadastroClienteView adicionarCliente = new CadastroClienteView();
+	        	adicionarCliente.open();
+	        });
+	        
+	        Button cadastrar = new Button("cadastrar usuario", event -> {
+	        	CriarUsuarioDialog adicionarUsuario = new CriarUsuarioDialog();
+	        	adicionarUsuario.open();
+	        });
+	        
 	        
 	        List<PedidoInsercao> lista = PedidoInsercao.buscarTodos();
 	        int total = lista.size();
@@ -97,8 +111,21 @@ public class DashboardOpecView extends Dashboard{
 	        btnAdicionar.getElement().getStyle()
 	                .set("cursor", "pointer")
 	                .set("font-weight", "bold");
+	        btnAdicionarAgencia.getStyle()
+            	.set("background-color", "#f97316")
+            	.set("color", "white");
+	        btnAdicionarAgencia.getElement().getStyle()
+            	.set("cursor", "pointer")
+            	.set("font-weight", "bold");
+	        btnAdicionarCliente.getStyle()
+            	.set("background-color", "#f97316")
+            	.set("color", "white");
+	        btnAdicionarCliente.getElement().getStyle()
+            	.set("cursor", "pointer")
+            	.set("font-weight", "bold");
+	        
 
-	        header.add(titulo, btnAdicionar);
+	        header.add(titulo, cadastrar, btnAdicionarCliente, btnAdicionarAgencia, btnAdicionar);
 	        header.expand(titulo);      
 	        
 	        grid.addColumn(pedido -> {
@@ -119,14 +146,14 @@ public class DashboardOpecView extends Dashboard{
 	        .setHeader("Valor Líquido").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getRepasseVeiculo()))
 	        .setHeader("Repasse Veículo").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcImposto()))
+	        .setHeader("% Imposto").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getImposto()))
 	        .setHeader("Imposto").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcBV()))
+	        .setHeader("% BV").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getBvAgencia()))
 	        .setHeader("BV Agência").setAutoWidth(true);
-	        grid.addColumn(pedido -> formatarPercentual(pedido.getComissaoPercentual()))
-	        .setHeader("% Comissão").setAutoWidth(true);
-	        grid.addColumn(pedido -> formatarMoeda(pedido.getValorComissao()))
-	        .setHeader("Valor Comissão").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getTotalLiquido()))
 	        .setHeader("Total Líquido").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getMidiaResponsavel).setHeader("Mídia Resp.").setAutoWidth(true);
@@ -135,10 +162,6 @@ public class DashboardOpecView extends Dashboard{
 	        grid.addColumn(PedidoInsercao::getMidia).setHeader("Mídia").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getLiquidoFinal()))
 	        .setHeader("Líquido Final").setAutoWidth(true);
-	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcImposto()))
-	        .setHeader("% Imposto").setAutoWidth(true);
-	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcBV()))
-	        .setHeader("% BV").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPiAgencia).setHeader("PI Agência").setAutoWidth(true);
 	        grid.addColumn(pedido -> DateUtils.formatarDataParaBrasileiro(pedido.getVencimentopiAgencia()))
 	        .setHeader("Venc. PI Agência").setAutoWidth(true);
@@ -226,7 +249,7 @@ public class DashboardOpecView extends Dashboard{
 	    }
 	}
 
-	private void atualizarGrid() {
+	public void atualizarGrid() {
 	    List<PedidoInsercao> pis = PedidoInsercao.buscarTodos();
 	    getUI().ifPresent(ui -> {
 	        if (ui.isAttached()) {

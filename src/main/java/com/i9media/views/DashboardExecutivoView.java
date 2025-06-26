@@ -1,16 +1,20 @@
 package com.i9media.views;
 
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.i9media.CriarCard;
+import com.i9media.Service.DashboardService;
 import com.i9media.models.Usuario;
 import com.i9media.utils.CanvasComponent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Span;
+
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -36,7 +40,6 @@ public class DashboardExecutivoView extends Dashboard {
 
     @Override
     protected Component construirConteudo() {
-        removeAll();
 
         String executivoLogado = getExecutivoLogadoNome();
 
@@ -44,31 +47,42 @@ public class DashboardExecutivoView extends Dashboard {
         mainLayout.setSizeFull();
         mainLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         mainLayout.setSpacing(true);
-        mainLayout.getStyle().set("margin-top", "100px"); // Afastar do cabeçalho
+        mainLayout.getStyle().set("margin-top", "70px");
 
         H1 title = new H1("Painel de Vendas do Executivo");
         title.getStyle().set("text-align", "center");
-
-        updateVisualInfo(executivoLogado);
 
         HorizontalLayout metricsLayout = createExecutiveSummaryLayout();
         metricsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         metricsLayout.setSpacing(true);
         metricsLayout.getStyle().set("margin-bottom", "30px");
 
-        // Gráficos (sem dados ainda)
         campaignsCanvas = new CanvasComponent(500, 300);
         mediaTypeCanvas = new CanvasComponent(400, 300);
+        
+        updateVisualInfo(executivoLogado); 
+        
+        Div wrapper1 = new Div(campaignsCanvas);
+        wrapper1.setWidth("500px");
+        wrapper1.setHeight("300px");
+        wrapper1.getStyle()
+            .set("overflow", "hidden")
+            .set("flex-shrink", "0");
 
-        HorizontalLayout chartsLayout = new HorizontalLayout(campaignsCanvas, mediaTypeCanvas);
+        Div wrapper2 = new Div(mediaTypeCanvas);
+        wrapper2.setWidth("400px");
+        wrapper2.setHeight("300px");
+        wrapper2.getStyle()
+            .set("overflow", "hidden")
+            .set("flex-shrink", "0");
+
+        HorizontalLayout chartsLayout = new HorizontalLayout(wrapper1, wrapper2);
         chartsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         chartsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        chartsLayout.setSpacing(true);
-        chartsLayout.getStyle().set("margin-top", "var(--lumo-space-l)");
 
         mainLayout.add(title, metricsLayout, chartsLayout);
-        
-        
+
+        add(mainLayout);
 
         return mainLayout;
     }
@@ -106,14 +120,111 @@ public class DashboardExecutivoView extends Dashboard {
                      .replace("X", ".");
     }
 
-    private void updateVisualInfo(String name) {
-        return;
+    private void updateVisualInfo(String nomeExecutivo) {
+        try {
+            double totalVendas = DashboardService.obterTotalVendasMensal(nomeExecutivo);
+            System.out.println("Total De Vendas: "+totalVendas);
+            double comissao = DashboardService.obterTotalComissaoMensal(nomeExecutivo);
+            System.out.println("Comissão: "+comissao);
+            double meta = DashboardService.obterMetaMensal(nomeExecutivo);
+
+            double atingimento = (meta > 0) ? (totalVendas / meta) * 100 : 0;
+
+            vendidoCard.setValor(formatarMoeda(totalVendas));
+            comissaoCard.setValor(formatarMoeda(comissao));
+            metaCard.setValor(formatarMoeda(meta));
+            atingimentoCard.setValor(String.format("%.0f %%", atingimento));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Notification.show("Erro ao carregar dados do dashboard: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+        }
     }
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
-        updateVisualInfo(getExecutivoLogadoNome());
+
+        String executivoNome = getExecutivoLogadoNome();
+        updateVisualInfo(executivoNome);
+
+        try {
+            Map<String, Integer> campanhasPorMes = DashboardService.obterCampanhasPorMes(executivoNome);
+            Map<String, Double> mediaVendasPorMes = DashboardService.obterMediaVendasPorMes(executivoNome);
+
+            String labelsCampanhas = campanhasPorMes.keySet().stream()
+                    .map(m -> "\"" + m + "\"")
+                    .collect(Collectors.joining(","));
+
+            String dataCampanhas = campanhasPorMes.values().stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+
+            String labelsMedia = mediaVendasPorMes.keySet().stream()
+                    .map(m -> "\"" + m + "\"")
+                    .collect(Collectors.joining(","));
+
+            String dataMedia = mediaVendasPorMes.values().stream()
+                    .map(d -> String.format("%.2f", d))
+                    .collect(Collectors.joining(","));
+
+            UI.getCurrent().getPage().executeJs(
+                """
+                const ctx1 = document.getElementById($0).getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: [%s],
+                        datasets: [{
+                            label: 'Total de Campanhas',
+                            data: [%s],
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                precision: 0
+                            }
+                        }
+                    }
+                });
+
+                const ctx2 = document.getElementById($1).getContext('2d');
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: [%s],
+                        datasets: [{
+                            label: 'Média de Vendas',
+                            data: [%s],
+                            fill: false,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                """.formatted(labelsCampanhas, dataCampanhas, labelsMedia, dataMedia),
+                campaignsCanvas.getId().get(),
+                mediaTypeCanvas.getId().get()
+            );
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Notification.show("Erro ao carregar dados dos gráficos.", 3000, Notification.Position.MIDDLE);
+        }
     }
 
     @Override
