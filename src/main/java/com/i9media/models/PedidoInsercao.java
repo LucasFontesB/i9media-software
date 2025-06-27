@@ -22,6 +22,9 @@ public class PedidoInsercao {
     private Integer clienteId;
     private Integer agenciaId;
     private Integer executivoId;
+    private String clienteNome;
+    private String agenciaNome;
+    private BigDecimal comissaoCalculada;
 
     private String veiculo;
     private String praca;
@@ -51,6 +54,15 @@ public class PedidoInsercao {
     private Date edicaoInicio;
 
     public PedidoInsercao() {}
+    
+    public String getClienteNome() { return clienteNome; }
+    public void setClienteNome(String clienteNome) { this.clienteNome = clienteNome; }
+
+    public String getAgenciaNome() { return agenciaNome; }
+    public void setAgenciaNome(String agenciaNome) { this.agenciaNome = agenciaNome; }
+
+    public BigDecimal getComissaoCalculada() { return comissaoCalculada; }
+    public void setComissaoCalculada(BigDecimal comissaoCalculada) { this.comissaoCalculada = comissaoCalculada; }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }

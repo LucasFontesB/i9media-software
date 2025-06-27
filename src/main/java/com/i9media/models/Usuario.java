@@ -18,10 +18,11 @@ public class Usuario {
 	private Executivo executivo;
 	private String departamento;
 	private Date criado_em;
+	private String criadoPor;
 	private boolean ativo;
 	
 	public static boolean salvarUsuario(Usuario usuario) {
-        String sql = "INSERT INTO usuarios (nome, usuario, senha, email, departamento, executivo_id) VALUES (?, ?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO usuarios (nome, usuario, senha, email, departamento, executivo_id, criado_por) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = Conectar.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -37,6 +38,7 @@ public class Usuario {
             } else {
                 stmt.setNull(6, java.sql.Types.INTEGER);
             }
+            stmt.setString(7, usuario.getCriadoPor());
 
             int linhasAfetadas = stmt.executeUpdate();
             return linhasAfetadas > 0;
@@ -67,6 +69,7 @@ public class Usuario {
 	                usuario_logado.setDepartamento(resultado.getString("departamento"));
 	                usuario_logado.setCriado_em(resultado.getDate("criado_em"));
 	                usuario_logado.setAtivo(resultado.getBoolean("ativo"));
+	                usuario_logado.setCriadoPor(resultado.getString("criado_por"));
 	            } else {
 	                CaixaMensagem.info_box("Erro Login", "Usuário Não Encontrado");
 	            }
@@ -77,6 +80,14 @@ public class Usuario {
 	    }
 
 	    return usuario_logado;
+	}
+	
+	public String getCriadoPor() {
+	    return criadoPor;
+	}
+
+	public void setCriadoPor(String string) {
+	    this.criadoPor = string;
 	}
 	
 	public Executivo getExecutivo() {

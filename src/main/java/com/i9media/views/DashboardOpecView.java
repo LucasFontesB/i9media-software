@@ -37,11 +37,7 @@ import java.util.concurrent.*;
 public class DashboardOpecView extends Dashboard{
 	
 	private Grid<PedidoInsercao> grid = new Grid<>();
-    private ScheduledExecutorService scheduler;
     private Timer timer;
-    private String nomeCliente;
-    private String nomeAgencia;
-    private String nomeExecutivo;
     private CardComponent cardTotalPIs;
 	
 	public DashboardOpecView() {
@@ -159,7 +155,8 @@ public class DashboardOpecView extends Dashboard{
 	        grid.addColumn(PedidoInsercao::getMidiaResponsavel).setHeader("Mídia Resp.").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarPercentual(pedido.getPercentualIndicacao()))
 	        .setHeader("% Indicação").setAutoWidth(true);
-	        grid.addColumn(PedidoInsercao::getMidia).setHeader("Mídia").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getMidia()))
+	        .setHeader("Mídia").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getLiquidoFinal()))
 	        .setHeader("Líquido Final").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPiAgencia).setHeader("PI Agência").setAutoWidth(true);
@@ -220,25 +217,6 @@ public class DashboardOpecView extends Dashboard{
 	    if (valor == null) return "0,00%";
 	    return String.format(Locale.forLanguageTag("pt-BR"), "%.2f%%", valor);
 	}
-	
-	/*@Override
-	protected void onAttach(AttachEvent attachEvent) {
-	    super.onAttach(attachEvent);
-
-	    timer = new Timer();
-	    timer.scheduleAtFixedRate(new TimerTask() {
-	    	@Override
-	        public void run() {
-	            getUI().ifPresent(ui -> {
-	                if (ui.isAttached()) {
-	                    ui.access(() -> atualizarGrid());
-	                } else {
-	                    cancel();
-	                }
-	            });
-	        }
-	    }, 0, 5000);
-	}*/
 
 	@Override
 	protected void onDetach(DetachEvent detachEvent) {

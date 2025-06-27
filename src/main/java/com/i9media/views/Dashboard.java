@@ -51,7 +51,7 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
     }
 
     private Component buildHeader() {
-    	HorizontalLayout header = new HorizontalLayout();
+        HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setHeight("64px");
         header.setPadding(true);
@@ -67,9 +67,13 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
             .set("right", "0")
             .set("z-index", "100");
 
+        // Seções do header
         HorizontalLayout leftSection = new HorizontalLayout();
         leftSection.setAlignItems(Alignment.CENTER);
         leftSection.setSpacing(true);
+
+        Image logo = new Image("/images/logo.png", "Logo I9Mídia");
+        logo.setHeight("32px");
 
         H1 title = new H1("I9Midia");
         title.getStyle()
@@ -80,30 +84,32 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
         Span separator = new Span("|");
         separator.getStyle().set("color", "white");
 
-        Span dashboardInfo = new Span("Departamento "+ user.getDepartamento());
+        Span dashboardInfo = new Span("Departamento " + user.getDepartamento());
         dashboardInfo.getStyle().set("color", "white");
 
-        leftSection.add(title, separator, dashboardInfo);
+        leftSection.add(logo, title, separator, dashboardInfo);
 
         HorizontalLayout rightSection = new HorizontalLayout();
         rightSection.setAlignItems(Alignment.CENTER);
         rightSection.setSpacing(true);
         
-        Image conta_img = new Image("/images/user.png", "Imagem De Usuario");
-        conta_img.setWidth("16px");
-        conta_img.setHeight("16px");
+        String caminhoFoto = "/images/usuarios/" + user.getUsuario() + ".png";
+        Image fotoExecutivo = new Image(caminhoFoto, "Foto do Executivo");
+        fotoExecutivo.setWidth("32px");
+        fotoExecutivo.setHeight("32px");
+        fotoExecutivo.getStyle().set("border-radius", "50%");
 
-        Button welcomeBtn = new Button("Bem-vindo, " + (user != null ? user.getNome() : "Visitante"), conta_img);
+        Button welcomeBtn = new Button("Bem-vindo, " + (user != null ? user.getNome() : "Visitante"));
         welcomeBtn.addClassName("bemvindo_botao");
-            
-        Image sair_img = new Image ("/images/logout.png", "Imagem Sair");
+
+        Image sair_img = new Image("/images/logout.png", "Imagem Sair");
         sair_img.setWidth("16px");
         sair_img.setHeight("16px");
 
         Button logoutBtn = new Button("Sair", sair_img, e -> Sair.Sair());
         logoutBtn.addClassName("logout_botao");
 
-        rightSection.add(welcomeBtn, logoutBtn);
+        rightSection.add(fotoExecutivo, welcomeBtn, logoutBtn);
 
         header.add(leftSection, rightSection);
         return header;

@@ -1,19 +1,25 @@
 package com.i9media.views;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.i9media.CriarCard;
 import com.i9media.Service.DashboardService;
+import com.i9media.models.PedidoInsercao;
 import com.i9media.models.Usuario;
 import com.i9media.utils.CanvasComponent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -81,6 +87,34 @@ public class DashboardExecutivoView extends Dashboard {
         chartsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
         mainLayout.add(title, metricsLayout, chartsLayout);
+        
+        try {
+            List<PedidoInsercao> pedidos = DashboardService.obterPedidosComComissaoMensal(executivoLogado);
+
+            Grid<PedidoInsercao> grid = new Grid<>(PedidoInsercao.class, false);
+            grid.addColumn(PedidoInsercao::getAgenciaNome).setHeader("Agência");
+            grid.addColumn(PedidoInsercao::getClienteNome).setHeader("Cliente");
+            grid.addColumn(p -> formatarMoedaBD(p.getComissaoCalculada())).setHeader("Comissão");
+
+            grid.setItems(pedidos);
+            grid.setWidth("80%");
+            grid.getStyle().set("margin-top", "30px");
+
+            H3 tituloTabela = new H3("PIs Vendidas no Mês");
+            tituloTabela.getStyle().set("margin-top", "20px");
+
+            Div gridWrapper = new Div(grid);
+            gridWrapper.setWidthFull();
+            gridWrapper.getStyle()
+                .set("display", "flex")
+                .set("justify-content", "center");
+
+            mainLayout.add(tituloTabela, gridWrapper);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Notification.show("Erro ao carregar PIs: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+        }
 
         add(mainLayout);
 
@@ -113,11 +147,18 @@ public class DashboardExecutivoView extends Dashboard {
         return cardsLayout;
     }
     
-    private String formatarMoeda(double valor) {
-        return String.format("R$ %,.2f", valor)
-                     .replace(",", "X")
-                     .replace(".", ",")
-                     .replace("X", ".");
+    private String formatarMoeda(Double valor) {
+        if (valor == null) return "R$ 0,00";
+        Locale localeBR = Locale.forLanguageTag("pt-BR");
+        NumberFormat nf = NumberFormat.getCurrencyInstance(localeBR);
+        return nf.format(valor);
+    }
+    
+    private String formatarMoedaBD(BigDecimal valor) {
+        if (valor == null) return "R$ 0,00";
+        Locale localeBR = Locale.forLanguageTag("pt-BR");
+        NumberFormat nf = NumberFormat.getCurrencyInstance(localeBR);
+        return nf.format(valor);
     }
 
     private void updateVisualInfo(String nomeExecutivo) {
@@ -164,62 +205,99 @@ public class DashboardExecutivoView extends Dashboard {
                     .collect(Collectors.joining(","));
 
             String dataMedia = mediaVendasPorMes.values().stream()
-                    .map(d -> String.format("%.2f", d))
+                    .map(String::valueOf)
                     .collect(Collectors.joining(","));
 
             UI.getCurrent().getPage().executeJs(
-                """
-                const ctx1 = document.getElementById($0).getContext('2d');
-                new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: [%s],
-                        datasets: [{
-                            label: 'Total de Campanhas',
-                            data: [%s],
-                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                precision: 0
-                            }
-                        }
-                    }
-                });
+            	    """
+            	    const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+            	        style: 'currency',
+            	        currency: 'BRL',
+            	        minimumFractionDigits: 2
+            	    });
 
-                const ctx2 = document.getElementById($1).getContext('2d');
-                new Chart(ctx2, {
-                    type: 'line',
-                    data: {
-                        labels: [%s],
-                        datasets: [{
-                            label: 'Média de Vendas',
-                            data: [%s],
-                            fill: false,
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-                """.formatted(labelsCampanhas, dataCampanhas, labelsMedia, dataMedia),
-                campaignsCanvas.getId().get(),
-                mediaTypeCanvas.getId().get()
-            );
+            	    const integerFormatter = new Intl.NumberFormat('pt-BR', {
+            	        maximumFractionDigits: 0
+            	    });
+
+            	    const ctx1 = document.getElementById($0).getContext('2d');
+            	    new Chart(ctx1, {
+            	        type: 'bar',
+            	        data: {
+            	            labels: [%s],
+            	            datasets: [{
+            	                label: 'Total de Campanhas',
+            	                data: [%s],
+            	                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            	                borderColor: 'rgba(75, 192, 192, 1)',
+            	                borderWidth: 1
+            	            }]
+            	        },
+            	        options: {
+            	            responsive: true,
+            	            scales: {
+            	                y: {
+            	                    beginAtZero: true,
+            	                    ticks: {
+            	                        callback: function(value) {
+            	                            return integerFormatter.format(value);
+            	                        }
+            	                    }
+            	                }
+            	            },
+            	            plugins: {
+            	                tooltip: {
+            	                    callbacks: {
+            	                        label: function(context) {
+            	                            return context.dataset.label + ': ' + integerFormatter.format(context.raw);
+            	                        }
+            	                    }
+            	                }
+            	            }
+            	        }
+            	    });
+
+            	    const ctx2 = document.getElementById($1).getContext('2d');
+            	    new Chart(ctx2, {
+            	        type: 'line',
+            	        data: {
+            	            labels: [%s],
+            	            datasets: [{
+            	                label: 'Média de Vendas',
+            	                data: [%s],
+            	                fill: false,
+            	                borderColor: 'rgba(255, 99, 132, 1)',
+            	                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            	                tension: 0.1
+            	            }]
+            	        },
+            	        options: {
+            	            responsive: true,
+            	            scales: {
+            	                y: {
+            	                    beginAtZero: true,
+            	                    ticks: {
+            	                        callback: function(value) {
+            	                            return currencyFormatter.format(value);
+            	                        }
+            	                    }
+            	                }
+            	            },
+            	            plugins: {
+            	                tooltip: {
+            	                    callbacks: {
+            	                        label: function(context) {
+            	                            return context.dataset.label + ': ' + currencyFormatter.format(context.raw);
+            	                        }
+            	                    }
+            	                }
+            	            }
+            	        }
+            	    });
+            	    """.formatted(labelsCampanhas, dataCampanhas, labelsMedia, dataMedia),
+            	    campaignsCanvas.getId().get(),
+            	    mediaTypeCanvas.getId().get()
+            	);
 
         } catch (SQLException e) {
             e.printStackTrace();
