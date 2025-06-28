@@ -16,6 +16,83 @@ import java.util.Map;
 
 public class DashboardService {
 	
+	public static List<PedidoInsercao> buscarAPagarMesAtual() throws SQLException {
+	    List<PedidoInsercao> pedidos = new ArrayList<>();
+
+	    String sql = "SELECT * FROM pi WHERE dataPagamentoParaVeiculo >= date_trunc('month', CURRENT_DATE) " +
+	                 "AND dataPagamentoParaVeiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month') " +
+	                 "ORDER BY dataPagamentoParaVeiculo ASC";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        while (rs.next()) {
+	            pedidos.add(PedidoInsercao.mapear(rs));
+	        }
+	    }
+
+	    return pedidos;
+	}
+
+	public static List<PedidoInsercao> buscarAReceberMesAtual() throws SQLException {
+	    List<PedidoInsercao> pedidos = new ArrayList<>();
+
+	    String sql = "SELECT * FROM pi WHERE vencimentopiagencia >= date_trunc('month', CURRENT_DATE) " +
+	                 "AND vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month') " +
+	                 "ORDER BY vencimentopiagencia ASC";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        while (rs.next()) {
+	            pedidos.add(PedidoInsercao.mapear(rs));
+	        }
+	    }
+
+	    return pedidos;
+	}
+	
+	public static double obterContasReceberMesAtual() throws SQLException {
+	    String sql = "SELECT COALESCE(SUM(valorliquido), 0) FROM pi " +
+	                 "WHERE vencimentopiagencia >= date_trunc('month', CURRENT_DATE) " +
+	                 "AND vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        if (rs.next()) {
+	            return rs.getDouble(1);
+	        }
+	    }
+	    return 0.0;
+	}
+	
+	public static double obterContasPagarMesAtual() throws SQLException {
+	    String sql = "SELECT COALESCE(SUM(repasseVeiculo), 0) AS total_pagar " +
+	                 "FROM pi " +
+	                 "WHERE dataPagamentoParaVeiculo >= date_trunc('month', CURRENT_DATE) " +
+	                 "AND dataPagamentoParaVeiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')";
+
+	    double totalPagar = 0.0;
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        
+	        if (rs.next()) {
+	            totalPagar = rs.getDouble("total_pagar");
+	        }
+	    }
+
+	    return totalPagar;
+	}
+	
+	public static double obterSaldoProjetadoMesAtual() throws SQLException {
+	    double receber = obterContasReceberMesAtual();
+	    double pagar = obterContasPagarMesAtual();
+	    return receber - pagar;
+	}
+	
 	public static int contarPisUltimoMes() throws SQLException {
 	    String sql = "SELECT COUNT(*) FROM pi WHERE " +
 	                 "vencimentopiagencia >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') " +

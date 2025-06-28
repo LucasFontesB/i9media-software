@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +53,83 @@ public class PedidoInsercao {
     
     private String emEdicaoPor; 
     private Date edicaoInicio;
+    
+    private String criadoPor;
+    private LocalDateTime dataDeCriacao;
+    
+    private Boolean pagoPelaAgencia;
+    private Date dataPagamentoPelaAgencia;
+    private String responsavelPagamentoAgencia;
+
+    private Boolean pagoParaVeiculo;
+    private Date PagamentoParaVeiculo;
+    private String responsavelPagamentoVeiculo;
 
     public PedidoInsercao() {}
+    
+    public Boolean getPagoPelaAgencia() {
+        return pagoPelaAgencia;
+    }
+
+    public void setPagoPelaAgencia(Boolean pagoPelaAgencia) {
+        this.pagoPelaAgencia = pagoPelaAgencia;
+    }
+
+    public Date getDataPagamentoPelaAgencia() {
+        return dataPagamentoPelaAgencia;
+    }
+
+    public void setDataPagamentoPelaAgencia(Date dataPagamentoPelaAgencia) {
+        this.dataPagamentoPelaAgencia = dataPagamentoPelaAgencia;
+    }
+
+    public String getResponsavelPagamentoAgencia() {
+        return responsavelPagamentoAgencia;
+    }
+
+    public void setResponsavelPagamentoAgencia(String responsavelPagamentoAgencia) {
+        this.responsavelPagamentoAgencia = responsavelPagamentoAgencia;
+    }
+
+    public Boolean getPagoParaVeiculo() {
+        return pagoParaVeiculo;
+    }
+
+    public void setPagoParaVeiculo(Boolean pagoParaVeiculo) {
+        this.pagoParaVeiculo = pagoParaVeiculo;
+    }
+
+    public Date getPagamentoParaVeiculo() {
+        return PagamentoParaVeiculo;
+    }
+
+    public void setPagamentoParaVeiculo(Date PagamentoParaVeiculo) {
+        this.PagamentoParaVeiculo = PagamentoParaVeiculo;
+    }
+
+    public String getResponsavelPagamentoVeiculo() {
+        return responsavelPagamentoVeiculo;
+    }
+
+    public void setResponsavelPagamentoVeiculo(String responsavelPagamentoVeiculo) {
+        this.responsavelPagamentoVeiculo = responsavelPagamentoVeiculo;
+    }
+    
+    public String getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(String criadoPor) {
+        this.criadoPor = criadoPor;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataDeCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataDeCriacao) {
+        this.dataDeCriacao = dataDeCriacao;
+    }
     
     public String getClienteNome() { return clienteNome; }
     public void setClienteNome(String clienteNome) { this.clienteNome = clienteNome; }
@@ -144,6 +220,102 @@ public class PedidoInsercao {
     
     public Date getEdicaoInicio() { return edicaoInicio; }
     public void setEdicaoInicio(Date edicaoInicio) { this.edicaoInicio = edicaoInicio; }
+    
+    public static List<PedidoInsercao> buscarAPagarNosProximosDias() throws SQLException {
+        List<PedidoInsercao> lista = new ArrayList<>();
+
+        String sql = "SELECT * FROM pi " +
+                     "WHERE dataPagamentoParaVeiculo >= CURRENT_DATE " +
+                     "AND dataPagamentoParaVeiculo <= CURRENT_DATE + INTERVAL '7' DAY " +
+                     "ORDER BY dataPagamentoParaVeiculo ASC";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
+    public static List<PedidoInsercao> buscarAReceberNosProximosDias() throws SQLException {
+        List<PedidoInsercao> lista = new ArrayList<>();
+
+        String sql = "SELECT * FROM pi " +
+                     "WHERE vencimentopiagencia >= CURRENT_DATE " +
+                     "AND vencimentopiagencia <= CURRENT_DATE + INTERVAL '7' DAY " +
+                     "ORDER BY vencimentopiagencia ASC";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+    
+    public static List<PedidoInsercao> buscarPedidosDoMesAtual() throws SQLException {
+        List<PedidoInsercao> pedidos = new ArrayList<>();
+
+        String sql = "SELECT * FROM pi WHERE vencimentopiagencia >= date_trunc('month', CURRENT_DATE) " +
+                     "AND vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')";
+
+        try (Connection conn = Conectar.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                pedidos.add(PedidoInsercao.mapear(rs));
+            }
+        }
+
+        return pedidos;
+    }
+    
+    public static PedidoInsercao mapear(ResultSet rs) throws SQLException {
+        PedidoInsercao pi = new PedidoInsercao();
+
+        pi.setId(rs.getInt("id"));
+        pi.setClienteId(rs.getInt("cliente_id"));
+        pi.setAgenciaId(rs.getInt("agencia_id"));
+        pi.setExecutivoId(rs.getInt("executivo_id"));
+        pi.setVeiculo(rs.getString("veiculo"));
+        pi.setPraca(rs.getString("praca")); 
+        pi.setValorLiquido(rs.getBigDecimal("valorLiquido"));
+        pi.setRepasseVeiculo(rs.getBigDecimal("repasseVeiculo"));
+        pi.setImposto(rs.getBigDecimal("imposto"));
+        pi.setBvAgencia(rs.getBigDecimal("bvAgencia"));
+        pi.setComissaoPercentual(rs.getBigDecimal("comissaoPercentual"));
+        pi.setValorComissao(rs.getBigDecimal("valorComissao"));
+        pi.setTotalLiquido(rs.getBigDecimal("totalLiquido"));
+        pi.setMidiaResponsavel(rs.getString("midiaResponsavel"));
+        pi.setPercentualIndicacao(rs.getBigDecimal("percentualIndicacao"));
+        pi.setMidia(rs.getBigDecimal("midia"));
+        pi.setLiquidoFinal(rs.getBigDecimal("liquidoFinal"));
+        pi.setPorcImposto(rs.getBigDecimal("porcimposto"));
+        pi.setPorcBV(rs.getBigDecimal("porcbv"));
+        pi.setPiAgencia(rs.getString("piAgencia"));
+        pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
+        pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
+        pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
+        pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
+        pi.setNfVeiculo(rs.getString("nfVeiculo"));
+        pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
+        pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
+
+        // NOVAS LINHAS
+        pi.setPagoPelaAgencia(rs.getBoolean("pago_pela_agencia"));
+        pi.setDataPagamentoPelaAgencia(rs.getDate("data_pagamento_pela_agencia"));
+        pi.setResponsavelPagamentoAgencia(rs.getString("responsavel_pagamento_agencia"));
+
+        pi.setPagoParaVeiculo(rs.getBoolean("pago_para_veiculo"));
+        // pi.setDataPagamentoParaVeiculo(rs.getDate("data_pagamento_para_veiculo")); // já existe acima, não repetir
+        pi.setResponsavelPagamentoVeiculo(rs.getString("responsavel_pagamento_veiculo"));
+
+        return pi;
+    }
 
     public BigDecimal CalcularBVAgencia(String bv) {
         BigDecimal valor = this.valorLiquido;
@@ -161,14 +333,16 @@ public class PedidoInsercao {
         ResultSet rs = null;
 
         try {
-        	conn = Conectar.getConnection();
+            conn = Conectar.getConnection();
 
             String sql = "SELECT " +
                          "id, cliente_id, agencia_id, executivo_id, veiculo, praca, valorLiquido, " +
                          "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
                          "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
                          "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
-                         "piI9_id, dataPagamentoParaVeiculo, nfVeiculo, em_edicao_por, edicao_inicio " +
+                         "piI9_id, dataPagamentoParaVeiculo, nfVeiculo, em_edicao_por, edicao_inicio, " +
+                         "pago_pela_agencia, data_pagamento_pela_agencia, responsavel_pagamento_agencia, " +
+                         "pago_para_veiculo, responsavel_pagamento_veiculo " +
                          "FROM PI";
 
             stmt = conn.prepareStatement(sql);
@@ -176,6 +350,7 @@ public class PedidoInsercao {
 
             while (rs.next()) {
                 PedidoInsercao pi = new PedidoInsercao();
+
                 pi.setId(rs.getInt("id"));
                 pi.setClienteId(rs.getInt("cliente_id"));
                 pi.setAgenciaId(rs.getInt("agencia_id"));
@@ -203,6 +378,13 @@ public class PedidoInsercao {
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
                 pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
+
+                // Novas colunas:
+                pi.setPagoPelaAgencia(rs.getBoolean("pago_pela_agencia"));
+                pi.setDataPagamentoPelaAgencia(rs.getDate("data_pagamento_pela_agencia"));
+                pi.setResponsavelPagamentoAgencia(rs.getString("responsavel_pagamento_agencia"));
+                pi.setPagoParaVeiculo(rs.getBoolean("pago_para_veiculo"));
+                pi.setResponsavelPagamentoVeiculo(rs.getString("responsavel_pagamento_veiculo"));
 
                 pedidos.add(pi);
             }
@@ -280,6 +462,13 @@ public class PedidoInsercao {
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
                 pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
+                
+                // Novas colunas:
+                pi.setPagoPelaAgencia(rs.getBoolean("pago_pela_agencia"));
+                pi.setDataPagamentoPelaAgencia(rs.getDate("data_pagamento_pela_agencia"));
+                pi.setResponsavelPagamentoAgencia(rs.getString("responsavel_pagamento_agencia"));
+                pi.setPagoParaVeiculo(rs.getBoolean("pago_para_veiculo"));
+                pi.setResponsavelPagamentoVeiculo(rs.getString("responsavel_pagamento_veiculo"));
             } 
         } catch (Exception e) {
             CaixaMensagem.info_box("Erro", "Erro ao buscar PI no banco");
@@ -295,6 +484,7 @@ public class PedidoInsercao {
         }
         return pi;
     }
+
 
     public BigDecimal CalcularComissao() {
         BigDecimal valor = this.repasseVeiculo != null ? this.repasseVeiculo : BigDecimal.ZERO;
@@ -341,8 +531,10 @@ public class PedidoInsercao {
                      "repasseVeiculo, imposto, bvAgencia, comissaoPercentual, valorComissao, " +
                      "totalLiquido, midiaResponsavel, percentualIndicacao, midia, liquidoFinal, " +
                      "porcimposto, porcbv, piAgencia, vencimentopiAgencia, checkingEnviado, " +
-                     "piI9_id, dataPagamentoParaVeiculo, nfVeiculo" +
-                     ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "piI9_id, dataPagamentoParaVeiculo, nfVeiculo, " +
+                     "pago_pela_agencia, data_pagamento_pela_agencia, responsavel_pagamento_agencia, " +
+                     "pago_para_veiculo, responsavel_pagamento_veiculo" +
+                     ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (
             Connection conn = Conectar.getConnection();
@@ -377,6 +569,25 @@ public class PedidoInsercao {
             }
             stmt.setDate(23, this.dataPagamentoParaVeiculo != null ? new java.sql.Date(this.dataPagamentoParaVeiculo.getTime()) : null);
             stmt.setString(24, this.nfVeiculo);
+
+            // Novos campos
+            if (this.pagoPelaAgencia != null) {
+                stmt.setBoolean(25, this.pagoPelaAgencia);
+            } else {
+                stmt.setNull(25, java.sql.Types.BOOLEAN);
+            }
+
+            stmt.setDate(26, this.dataPagamentoPelaAgencia != null ? new java.sql.Date(this.dataPagamentoPelaAgencia.getTime()) : null);
+
+            stmt.setString(27, this.responsavelPagamentoAgencia);
+
+            if (this.pagoParaVeiculo != null) {
+                stmt.setBoolean(28, this.pagoParaVeiculo);
+            } else {
+                stmt.setNull(28, java.sql.Types.BOOLEAN);
+            }
+
+            stmt.setString(29, this.responsavelPagamentoVeiculo);
 
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {

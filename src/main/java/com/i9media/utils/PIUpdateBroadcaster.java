@@ -1,5 +1,6 @@
 package com.i9media.utils;
 
+import com.i9media.views.DashboardFinanceiroView;
 import com.i9media.views.DashboardOpecView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.shared.communication.PushMode;
@@ -20,6 +21,10 @@ public class PIUpdateBroadcaster {
         for (UI ui : listeners) {
             ui.access(() -> {
                 ui.getChildren().forEach(component -> {
+                	
+                	if (component instanceof DashboardFinanceiroView) {
+                        ((DashboardFinanceiroView) component).atualizarTudo();
+                    }
 
                     if (component instanceof DashboardOpecView) {
                         ((DashboardOpecView) component).atualizarCard();

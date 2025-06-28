@@ -33,7 +33,10 @@ public class LoginView extends HorizontalLayout {
         addClassName("loginview");
 
         Div lado_direito = new Div();
-        lado_direito.setWidth("40%");
+        lado_direito.setHeightFull();
+        lado_direito.getStyle().set("display", "flex");
+        lado_direito.getStyle().set("justify-content", "center");
+        lado_direito.getStyle().set("align-items", "center");
         
         Div lado_esquerdo = new Div();
         lado_esquerdo.setWidth("60%");
@@ -61,8 +64,8 @@ public class LoginView extends HorizontalLayout {
 
         HorizontalLayout layout_login = new HorizontalLayout();
         layout_login.addClassName("layout_login");
-        layout_login.setWidth("85%");
-        layout_login.setHeight("90%");
+        layout_login.setWidth("500px");
+        layout_login.setHeight("700px");
         layout_login.setAlignItems(Alignment.CENTER);
         layout_login.setJustifyContentMode(JustifyContentMode.CENTER);
         layout_login.add(form_layout);

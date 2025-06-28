@@ -6,6 +6,7 @@ import com.i9media.utils.PIUpdateBroadcaster;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -13,6 +14,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
@@ -20,14 +22,18 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class PIView extends Dialog {
@@ -62,6 +68,19 @@ public class PIView extends Dialog {
 	private final TextField piI9Id = new TextField("PI I9 ID");
 	private final DatePicker dataPagamentoParaVeiculo = new DatePicker("Data Pagamento Veículo");
 	private final TextField nfVeiculo = new TextField("NF Veículo");
+	
+	private final TextField criadoPorField = new TextField("Criado por");
+	private final TextField dataCriacaoField = new TextField("Data de Criação");
+	
+	private final TextField pagoPelaAgenciaField = new TextField("Pago pela Agência");
+	private final DatePicker dataPagamentoPelaAgenciaPicker = new DatePicker("Data Pagamento Agência");
+	private final TextField responsavelPagamentoAgenciaField = new TextField("Responsável Pagamento Agência");
+
+	private final TextField pagoParaVeiculoField = new TextField("Pago para Veículo");
+	private final DatePicker PagamentoParaVeiculoPicker = new DatePicker("Data Pagamento Veículo"); 
+	private final TextField responsavelPagamentoVeiculoField = new TextField("Responsável Pagamento Veículo");
+	
+	Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
 
     private final Button editarButton = new Button("🛠️ Editar");
     private final Button salvarButton = new Button("💾 Salvar");
@@ -74,6 +93,18 @@ public class PIView extends Dialog {
     private final Runnable atualizarCardCallback;
 
     public PIView(PIDTO pi, Runnable atualizarCardCallback) throws SQLException {
+    	
+    	if (usuarioLogado != null && 
+    		    usuarioLogado.getDepartamento() != null && 
+    		    usuarioLogado.getDepartamento().equalsIgnoreCase("EXECUTIVO")) {
+
+    		    // Remove todos os botões
+    		    editarButton.setVisible(false);
+    		    salvarButton.setVisible(false);
+    		    cancelarButton.setVisible(false);
+    		    deletarButton.setVisible(false);
+    		}
+    	
     	addDetachListener(event -> {
     	    try {
     	        Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
@@ -238,6 +269,21 @@ public class PIView extends Dialog {
         binder.forField(nfVeiculo).bind(PIDTO::getNfVeiculo, PIDTO::setNfVeiculo);
 
         binder.readBean(pi);
+        
+        criadoPorField.setValue(pi.getCriadoPor() != null ? pi.getCriadoPor() : "-");
+        criadoPorField.setReadOnly(true);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            .withLocale(new Locale("pt", "BR"));
+        dataCriacaoField.setValue(pi.getDataCriacao() != null ? pi.getDataCriacao().format(formatter) : "-");
+        dataCriacaoField.setReadOnly(true);
+
+        pagoPelaAgenciaField.setValue(Boolean.TRUE.equals(pi.getPagoPelaAgencia()) ? "Sim" : "Não");
+        pagoPelaAgenciaField.setReadOnly(true);
+
+        pagoParaVeiculoField.setValue(Boolean.TRUE.equals(pi.getPagoParaVeiculo()) ? "Sim" : "Não");
+        pagoParaVeiculoField.setReadOnly(true);
+        
         setReadOnly(true);
         
         ValueChangeListener<AbstractField.ComponentValueChangeEvent<NumberField, Double>> recalcular = e -> atualizarCamposCalculados();
@@ -327,6 +373,7 @@ public class PIView extends Dialog {
                     setReadOnly(false);
                     salvarButton.setEnabled(true);
                     editarButton.setEnabled(false);
+                    PIUpdateBroadcaster.broadcast();
                 } else {
                     Notification.show("Este PI está sendo editado por outro usuário.");
                     setReadOnly(true);
@@ -391,6 +438,7 @@ public class PIView extends Dialog {
                 }
 
                 setReadOnly(true);
+                PIUpdateBroadcaster.broadcast();
                 close();
 
             } catch (ValidationException ex) {
@@ -409,22 +457,60 @@ public class PIView extends Dialog {
                         atualizarCardCallback.run();
                     }
                     PedidoInsercaoService.liberarBloqueio(pi.getId());
+                    
                 }
                 binder.readBean(original);
                 if (atualizarCardCallback != null) {
                     atualizarCardCallback.run();
                 }
                 setReadOnly(true);
+                PIUpdateBroadcaster.broadcast();
                 close();
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         });
+        
+        FlexLayout layoutInfosGerais = new FlexLayout(criadoPorField, dataCriacaoField, pagoPelaAgenciaField, pagoParaVeiculoField, PagamentoParaVeiculoPicker, dataPagamentoPelaAgenciaPicker
+        		, responsavelPagamentoVeiculoField, responsavelPagamentoAgenciaField);
+        layoutInfosGerais.setWidthFull();
+        layoutInfosGerais.getStyle().set("flex-wrap", "wrap");
+        layoutInfosGerais.setAlignItems(FlexComponent.Alignment.CENTER);
+        layoutInfosGerais.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+
+        // Opcional: definir uma largura máxima para os campos, para que o wrap funcione melhor:
+        criadoPorField.setWidth("250px");
+        dataCriacaoField.setWidth("250px");
+        pagoPelaAgenciaField.setWidth("150px");
+        pagoParaVeiculoField.setWidth("150px");
 
         HorizontalLayout buttonBar = new HorizontalLayout(cancelarButton, editarButton, salvarButton, deletarButton);
         buttonBar.setSpacing(true);
+        
+        if (usuarioLogado != null && 
+        	    usuarioLogado.getDepartamento() != null && 
+        	    usuarioLogado.getDepartamento().equalsIgnoreCase("FINANCEIRO")) {
 
-        VerticalLayout layout = new VerticalLayout(title, formLayout, buttonBar);
+        	    // Remove todos os botões
+        	    editarButton.setVisible(false);
+        	    salvarButton.setVisible(false);
+        	    cancelarButton.setVisible(false);
+        	    deletarButton.setVisible(false);
+        	}
+        
+        PagamentoParaVeiculoPicker.setValue(toLocalDate(pi.getPagamentoParaVeiculo()));
+        PagamentoParaVeiculoPicker.setReadOnly(true);
+
+        dataPagamentoPelaAgenciaPicker.setValue(toLocalDate(pi.getDataPagamentoPelaAgencia()));
+        dataPagamentoPelaAgenciaPicker.setReadOnly(true);
+
+        responsavelPagamentoVeiculoField.setValue(pi.getResponsavelPagamentoVeiculo() != null ? pi.getResponsavelPagamentoVeiculo() : "-");
+        responsavelPagamentoVeiculoField.setReadOnly(true);
+
+        responsavelPagamentoAgenciaField.setValue(pi.getResponsavelPagamentoAgencia() != null ? pi.getResponsavelPagamentoAgencia() : "-");
+        responsavelPagamentoAgenciaField.setReadOnly(true);
+
+        VerticalLayout layout = new VerticalLayout(title, layoutInfosGerais, formLayout, buttonBar);
         layout.setPadding(true);
         layout.setSpacing(true);
         layout.setWidthFull();

@@ -1,6 +1,7 @@
 package com.i9media.models;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class PIDTO {
@@ -41,6 +42,17 @@ public class PIDTO {
     private String emEdicaoPor; 
     private Date edicaoInicio;
     
+    private String criadoPor;
+    private LocalDateTime dataCriacao;
+    
+    private Boolean pagoPelaAgencia;
+    private Date dataPagamentoPelaAgencia;
+    private String responsavelPagamentoAgencia;
+
+    private Boolean pagoParaVeiculo;
+    private Date PagamentoParaVeiculo;
+    private String responsavelPagamentoVeiculo;
+    
     public PIDTO(PIDTO other) {
         if (other != null) {
             this.id = other.getId();
@@ -70,6 +82,17 @@ public class PIDTO {
             this.nfVeiculo = other.getNfVeiculo();
             this.emEdicaoPor = other.getEmEdicaoPor();
             this.edicaoInicio = other.getEdicaoInicio();
+            this.criadoPor = other.getCriadoPor();
+            this.dataCriacao = other.getDataCriacao();
+
+            // Novos campos pagos
+            this.pagoPelaAgencia = other.getPagoPelaAgencia();
+            this.dataPagamentoPelaAgencia = other.getDataPagamentoPelaAgencia();
+            this.responsavelPagamentoAgencia = other.getResponsavelPagamentoAgencia();
+
+            this.pagoParaVeiculo = other.getPagoParaVeiculo();
+            // dataPagamentoParaVeiculo já existe, então não precisa repetir
+            this.responsavelPagamentoVeiculo = other.getResponsavelPagamentoVeiculo();
         }
     }
     
@@ -107,12 +130,89 @@ public class PIDTO {
         dto.setPiI9Id(pi.getPiI9Id());
         dto.setDataPagamentoParaVeiculo(pi.getDataPagamentoParaVeiculo());
         dto.setNfVeiculo(pi.getNfVeiculo());
-        
+
         dto.setEmEdicaoPor(pi.getEmEdicaoPor());
         dto.setEdicaoInicio(pi.getEdicaoInicio());
 
+        dto.setCriadoPor(pi.getCriadoPor());
+        dto.setDataCriacao(pi.getDataCriacao());
+
+        // Novos campos pagos
+        dto.setPagoPelaAgencia(pi.getPagoPelaAgencia());
+        dto.setDataPagamentoPelaAgencia(pi.getDataPagamentoPelaAgencia());
+        dto.setResponsavelPagamentoAgencia(pi.getResponsavelPagamentoAgencia());
+
+        dto.setPagoParaVeiculo(pi.getPagoParaVeiculo());
+        dto.setResponsavelPagamentoVeiculo(pi.getResponsavelPagamentoVeiculo());
+
         return dto;
     }
+    
+    public Boolean getPagoPelaAgencia() {
+        return pagoPelaAgencia;
+    }
+
+    public void setPagoPelaAgencia(Boolean pagoPelaAgencia) {
+        this.pagoPelaAgencia = pagoPelaAgencia;
+    }
+
+    public Date getDataPagamentoPelaAgencia() {
+        return dataPagamentoPelaAgencia;
+    }
+
+    public void setDataPagamentoPelaAgencia(Date dataPagamentoPelaAgencia) {
+        this.dataPagamentoPelaAgencia = dataPagamentoPelaAgencia;
+    }
+
+    public String getResponsavelPagamentoAgencia() {
+        return responsavelPagamentoAgencia;
+    }
+
+    public void setResponsavelPagamentoAgencia(String responsavelPagamentoAgencia) {
+        this.responsavelPagamentoAgencia = responsavelPagamentoAgencia;
+    }
+
+    public Boolean getPagoParaVeiculo() {
+        return pagoParaVeiculo;
+    }
+
+    public void setPagoParaVeiculo(Boolean pagoParaVeiculo) {
+        this.pagoParaVeiculo = pagoParaVeiculo;
+    }
+
+    public Date getPagamentoParaVeiculo() {
+        return dataPagamentoParaVeiculo;
+    }
+
+    public void setPagamentoParaVeiculo(Date PagamentoParaVeiculo) {
+        this.PagamentoParaVeiculo = PagamentoParaVeiculo;
+    }
+
+    public String getResponsavelPagamentoVeiculo() {
+        return responsavelPagamentoVeiculo;
+    }
+
+    public void setResponsavelPagamentoVeiculo(String responsavelPagamentoVeiculo) {
+        this.responsavelPagamentoVeiculo = responsavelPagamentoVeiculo;
+    }
+    
+    public String getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(String criadoPor) {
+        this.criadoPor = criadoPor;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    
 
     public PIDTO() {
     }

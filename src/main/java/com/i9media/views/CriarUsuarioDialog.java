@@ -190,7 +190,8 @@ public class CriarUsuarioDialog extends Dialog {
         novoUsuario.setSenha(senhaField.getValue());
         novoUsuario.setEmail(emailField.getValue());
         novoUsuario.setDepartamento(departamento);
-        novoUsuario.setCriadoPor(usuarioLogado.getId());
+        int id = Integer.parseInt(usuarioLogado.getId());
+        novoUsuario.setCriadoPor(id);
 
         if (executivoCriado != null) {
             novoUsuario.setExecutivo(executivoCriado);

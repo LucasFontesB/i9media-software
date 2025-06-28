@@ -104,12 +104,14 @@ public class DashboardPlanejamentoView extends Dashboard{
 	        grid.addColumn(PedidoInsercao::getVeiculo).setHeader("Veículo").setAutoWidth(true);
 
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getValorLiquido()))
-	        .setHeader("Valor Líquido").setAutoWidth(true);
+	        .setHeader("Valor PI Agencia").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getRepasseVeiculo()))
 	        .setHeader("Repasse Veículo").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getMidiaResponsavel).setHeader("Mídia Resp.").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarPercentual(pedido.getPercentualIndicacao()))
 	        .setHeader("% Indicação").setAutoWidth(true);
+	        grid.addColumn(pedido -> formatarMoeda(pedido.getMidia()))
+	        .setHeader("Valor Indicação").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcImposto()))
 	        .setHeader("% Imposto").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getImposto()))
@@ -118,8 +120,6 @@ public class DashboardPlanejamentoView extends Dashboard{
 	        .setHeader("% BV").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getBvAgencia()))
 	        .setHeader("BV Agência").setAutoWidth(true);
-	        grid.addColumn(pedido -> formatarMoeda(pedido.getMidia()))
-	        .setHeader("Mídia").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getTotalLiquido()))
 	        .setHeader("Total Líquido").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getLiquidoFinal()))

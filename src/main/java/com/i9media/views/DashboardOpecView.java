@@ -139,7 +139,7 @@ public class DashboardOpecView extends Dashboard{
 	        grid.addColumn(PedidoInsercao::getVeiculo).setHeader("Veículo").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPraca).setHeader("Praça").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getValorLiquido()))
-	        .setHeader("Valor Líquido").setAutoWidth(true);
+	        .setHeader("Valor PI Agencia").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getRepasseVeiculo()))
 	        .setHeader("Repasse Veículo").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarPercentual(pedido.getPorcImposto()))
@@ -156,7 +156,7 @@ public class DashboardOpecView extends Dashboard{
 	        grid.addColumn(pedido -> formatarPercentual(pedido.getPercentualIndicacao()))
 	        .setHeader("% Indicação").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getMidia()))
-	        .setHeader("Mídia").setAutoWidth(true);
+	        .setHeader("Valor Indicação").setAutoWidth(true);
 	        grid.addColumn(pedido -> formatarMoeda(pedido.getLiquidoFinal()))
 	        .setHeader("Líquido Final").setAutoWidth(true);
 	        grid.addColumn(PedidoInsercao::getPiAgencia).setHeader("PI Agência").setAutoWidth(true);

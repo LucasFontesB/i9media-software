@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import com.i9media.models.Agencia;
 import com.i9media.models.Cliente;
 import com.i9media.models.Executivo;
 import com.i9media.models.PedidoInsercao;
+import com.i9media.models.Usuario;
 import com.i9media.utils.PIUpdateBroadcaster;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
@@ -35,6 +37,7 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
+import com.vaadin.flow.server.VaadinSession;
 
 public class AdicionarPI extends Dialog {
     private HashMap<String, String> dados = new HashMap<>();
@@ -67,6 +70,8 @@ public class AdicionarPI extends Dialog {
     private final TextField piI9Id = new TextField("PI I9 ID");
     private final DatePicker dataPagamentoParaVeiculo = new DatePicker("Data Pagamento Veículo");
     private final TextField nfVeiculo = new TextField("NF Veículo");
+    
+    private Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
     
     private final Runnable atualizarCardCallback;
 
@@ -494,7 +499,7 @@ public class AdicionarPI extends Dialog {
         pi.setRepasseVeiculo(toBigDecimal(repasseInput));
         pi.setImposto(toBigDecimal(impostoInput));
         pi.setBvAgencia(toBigDecimal(valorBVInput));
-        pi.setComissaoPercentual(BigDecimal.ZERO); // você pode calcular se quiser
+        pi.setComissaoPercentual(BigDecimal.ZERO);
         pi.setValorComissao(toBigDecimal(comissaoInput));
         pi.setTotalLiquido(toBigDecimal(totalLiquidoInput));
         pi.setLiquidoFinal(toBigDecimal(liquidoFinalInput));
@@ -514,6 +519,9 @@ public class AdicionarPI extends Dialog {
         pi.setVencimentopiAgencia(toDate(vencimentoPI));
         pi.setCheckingEnviado(toDate(checkingDate));
         pi.setDataPagamentoParaVeiculo(toDate(dataPagamento));
+        pi.setDataCriacao(LocalDateTime.now());
+        pi.setCriadoPor(usuarioLogado.getNome()); 
+        pi.setPago(false);
 
         try {
             pi.salvar();

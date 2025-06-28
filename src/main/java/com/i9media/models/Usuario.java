@@ -18,7 +18,7 @@ public class Usuario {
 	private Executivo executivo;
 	private String departamento;
 	private Date criado_em;
-	private String criadoPor;
+	private Integer criadoPor;
 	private boolean ativo;
 	
 	public static boolean salvarUsuario(Usuario usuario) {
@@ -38,7 +38,7 @@ public class Usuario {
             } else {
                 stmt.setNull(6, java.sql.Types.INTEGER);
             }
-            stmt.setString(7, usuario.getCriadoPor());
+            stmt.setInt(7, usuario.getCriadoPor());
 
             int linhasAfetadas = stmt.executeUpdate();
             return linhasAfetadas > 0;
@@ -69,7 +69,7 @@ public class Usuario {
 	                usuario_logado.setDepartamento(resultado.getString("departamento"));
 	                usuario_logado.setCriado_em(resultado.getDate("criado_em"));
 	                usuario_logado.setAtivo(resultado.getBoolean("ativo"));
-	                usuario_logado.setCriadoPor(resultado.getString("criado_por"));
+	                usuario_logado.setCriadoPor(resultado.getInt("criado_por"));
 	            } else {
 	                CaixaMensagem.info_box("Erro Login", "Usuário Não Encontrado");
 	            }
@@ -82,11 +82,11 @@ public class Usuario {
 	    return usuario_logado;
 	}
 	
-	public String getCriadoPor() {
+	public Integer getCriadoPor() {
 	    return criadoPor;
 	}
 
-	public void setCriadoPor(String string) {
+	public void setCriadoPor(Integer string) {
 	    this.criadoPor = string;
 	}
 	
