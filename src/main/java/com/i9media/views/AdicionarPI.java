@@ -521,7 +521,12 @@ public class AdicionarPI extends Dialog {
         pi.setDataPagamentoParaVeiculo(toDate(dataPagamento));
         pi.setDataCriacao(LocalDateTime.now());
         pi.setCriadoPor(usuarioLogado.getNome()); 
-        pi.setPago(false);
+        pi.setPagoPelaAgencia(false);
+        pi.setPagoParaVeiculo(false);
+        pi.setDataConfirmadaPagamentoPelaAgencia(null);
+        pi.setdataConfirmadaPagamentoParaVeiculo(null);
+        pi.setResponsavelPagamentoVeiculo(null);
+        pi.setResponsavelPagamentoAgencia(null);
 
         try {
             pi.salvar();

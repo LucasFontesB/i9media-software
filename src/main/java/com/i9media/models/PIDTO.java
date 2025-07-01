@@ -1,8 +1,13 @@
 package com.i9media.models;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Date;
+
+import com.i9media.Conectar;
 
 public class PIDTO {
 
@@ -46,11 +51,11 @@ public class PIDTO {
     private LocalDateTime dataCriacao;
     
     private Boolean pagoPelaAgencia;
-    private Date dataPagamentoPelaAgencia;
+    private Date dataConfirmadaPagamentoPelaAgencia;
     private String responsavelPagamentoAgencia;
 
     private Boolean pagoParaVeiculo;
-    private Date PagamentoParaVeiculo;
+    private Date dataConfirmadaPagamentoParaVeiculo;
     private String responsavelPagamentoVeiculo;
     
     public PIDTO(PIDTO other) {
@@ -87,12 +92,37 @@ public class PIDTO {
 
             // Novos campos pagos
             this.pagoPelaAgencia = other.getPagoPelaAgencia();
-            this.dataPagamentoPelaAgencia = other.getDataPagamentoPelaAgencia();
+            this.dataConfirmadaPagamentoPelaAgencia = other.getDataConfirmadaPagamentoPelaAgencia();
             this.responsavelPagamentoAgencia = other.getResponsavelPagamentoAgencia();
 
             this.pagoParaVeiculo = other.getPagoParaVeiculo();
-            // dataPagamentoParaVeiculo já existe, então não precisa repetir
+            this.dataConfirmadaPagamentoParaVeiculo = other.getdataConfirmadaPagamentoParaVeiculo();
             this.responsavelPagamentoVeiculo = other.getResponsavelPagamentoVeiculo();
+        }
+    }
+    
+    public void atualizarPagamentoFinanceiro() throws SQLException {
+        String sql = "UPDATE pi SET " +
+                     "pago_pela_agencia = ?, " +
+                     "data_pagamento_pela_agencia = ?, " +
+                     "pago_para_veiculo = ?, " +
+                     "data_pagamento_para_veiculo = ?, responsavel_pagamento_veiculo = ?, responsavel_pagamento_agencia = ? " +
+                     "WHERE id = ?";
+
+        try (Connection conn = Conectar.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setBoolean(1, this.pagoPelaAgencia != null ? this.pagoPelaAgencia : false);
+            stmt.setDate(2, this.dataConfirmadaPagamentoPelaAgencia != null ? new java.sql.Date(this.dataConfirmadaPagamentoPelaAgencia.getTime()) : null);
+
+            stmt.setBoolean(3, this.pagoParaVeiculo != null ? this.pagoParaVeiculo : false);
+            stmt.setDate(4, this.dataConfirmadaPagamentoParaVeiculo != null ? new java.sql.Date(this.dataPagamentoParaVeiculo.getTime()) : null);
+            stmt.setString(5, this.responsavelPagamentoVeiculo);
+            stmt.setString(6, this.responsavelPagamentoAgencia);
+            
+            
+            stmt.setInt(7, this.id);
+
+            stmt.executeUpdate();
         }
     }
     
@@ -139,9 +169,11 @@ public class PIDTO {
 
         // Novos campos pagos
         dto.setPagoPelaAgencia(pi.getPagoPelaAgencia());
-        dto.setDataPagamentoPelaAgencia(pi.getDataPagamentoPelaAgencia());
+        dto.setDataConfirmadaPagamentoPelaAgencia(pi.getDataConfirmadaPagamentoPelaAgencia());
         dto.setResponsavelPagamentoAgencia(pi.getResponsavelPagamentoAgencia());
+        dto.setdataConfirmadaPagamentoParaVeiculo(pi.getdataConfirmadaPagamentoParaVeiculo());
 
+        
         dto.setPagoParaVeiculo(pi.getPagoParaVeiculo());
         dto.setResponsavelPagamentoVeiculo(pi.getResponsavelPagamentoVeiculo());
 
@@ -156,12 +188,12 @@ public class PIDTO {
         this.pagoPelaAgencia = pagoPelaAgencia;
     }
 
-    public Date getDataPagamentoPelaAgencia() {
-        return dataPagamentoPelaAgencia;
+    public Date getDataConfirmadaPagamentoPelaAgencia() {
+        return dataConfirmadaPagamentoPelaAgencia;
     }
 
-    public void setDataPagamentoPelaAgencia(Date dataPagamentoPelaAgencia) {
-        this.dataPagamentoPelaAgencia = dataPagamentoPelaAgencia;
+    public void setDataConfirmadaPagamentoPelaAgencia(Date dataPagamentoPelaAgencia) {
+        this.dataConfirmadaPagamentoPelaAgencia = dataPagamentoPelaAgencia;
     }
 
     public String getResponsavelPagamentoAgencia() {
@@ -180,12 +212,12 @@ public class PIDTO {
         this.pagoParaVeiculo = pagoParaVeiculo;
     }
 
-    public Date getPagamentoParaVeiculo() {
-        return dataPagamentoParaVeiculo;
+    public Date getdataConfirmadaPagamentoParaVeiculo() {
+        return dataConfirmadaPagamentoParaVeiculo;
     }
 
-    public void setPagamentoParaVeiculo(Date PagamentoParaVeiculo) {
-        this.PagamentoParaVeiculo = PagamentoParaVeiculo;
+    public void setdataConfirmadaPagamentoParaVeiculo(Date PagamentoParaVeiculo) {
+        this.dataConfirmadaPagamentoParaVeiculo = PagamentoParaVeiculo;
     }
 
     public String getResponsavelPagamentoVeiculo() {

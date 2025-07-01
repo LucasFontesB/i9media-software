@@ -238,7 +238,8 @@ public class DashboardOpecView extends Dashboard{
 	
 	@Override
 	protected boolean temPermissao(Usuario user) {
-        return "opec".equalsIgnoreCase(user.getDepartamento());
-    }
+	    String dept = user.getDepartamento();
+	    return "opec".equalsIgnoreCase(dept) || "adm".equalsIgnoreCase(dept);
+	}
 
 }

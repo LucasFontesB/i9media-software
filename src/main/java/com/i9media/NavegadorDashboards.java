@@ -23,11 +23,12 @@ public class NavegadorDashboards {
             case "planejamento":
                 UI.getCurrent().navigate("dashboard-planejamento");
                 break;
-            case "admin":
-                UI.getCurrent().navigate("dashboard-admin");
+            case "adm": // Use apenas um caso, o correto é "adm"
+                UI.getCurrent().navigate("dashboard-adm");
                 break;
             case "executivo":
-            	UI.getCurrent().navigate("dashboard-vendas");
+                UI.getCurrent().navigate("dashboard-vendas");
+                break;
             default:
                 UI.getCurrent().navigate("dashboard-geral");
                 break;

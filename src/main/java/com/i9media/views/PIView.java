@@ -22,8 +22,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.checkbox.Checkbox;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -73,11 +73,11 @@ public class PIView extends Dialog {
 	private final TextField dataCriacaoField = new TextField("Data de Criação");
 	
 	private final TextField pagoPelaAgenciaField = new TextField("Pago pela Agência");
-	private final DatePicker dataPagamentoPelaAgenciaPicker = new DatePicker("Data Pagamento Agência");
+	private final DatePicker dataConfirmadaPagamentoPelaAgenciaPicker = new DatePicker("Data Pagamento Agência");
 	private final TextField responsavelPagamentoAgenciaField = new TextField("Responsável Pagamento Agência");
 
 	private final TextField pagoParaVeiculoField = new TextField("Pago para Veículo");
-	private final DatePicker PagamentoParaVeiculoPicker = new DatePicker("Data Pagamento Veículo"); 
+	private final DatePicker dataConfirmadaPagamentoParaVeiculoPicker = new DatePicker("Data Pagamento Veículo"); 
 	private final TextField responsavelPagamentoVeiculoField = new TextField("Responsável Pagamento Veículo");
 	
 	Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
@@ -471,7 +471,7 @@ public class PIView extends Dialog {
             }
         });
         
-        FlexLayout layoutInfosGerais = new FlexLayout(criadoPorField, dataCriacaoField, pagoPelaAgenciaField, pagoParaVeiculoField, PagamentoParaVeiculoPicker, dataPagamentoPelaAgenciaPicker
+        FlexLayout layoutInfosGerais = new FlexLayout(criadoPorField, dataCriacaoField, pagoPelaAgenciaField, pagoParaVeiculoField, dataConfirmadaPagamentoParaVeiculoPicker, dataConfirmadaPagamentoPelaAgenciaPicker
         		, responsavelPagamentoVeiculoField, responsavelPagamentoAgenciaField);
         layoutInfosGerais.setWidthFull();
         layoutInfosGerais.getStyle().set("flex-wrap", "wrap");
@@ -487,22 +487,103 @@ public class PIView extends Dialog {
         HorizontalLayout buttonBar = new HorizontalLayout(cancelarButton, editarButton, salvarButton, deletarButton);
         buttonBar.setSpacing(true);
         
-        if (usuarioLogado != null && 
-        	    usuarioLogado.getDepartamento() != null && 
+        VerticalLayout layout = new VerticalLayout(title, layoutInfosGerais, formLayout, buttonBar);
+        layout.setPadding(true);
+        layout.setSpacing(true);
+        layout.setWidthFull();
+        
+        if (usuarioLogado != null &&
+        	    usuarioLogado.getDepartamento() != null &&
         	    usuarioLogado.getDepartamento().equalsIgnoreCase("FINANCEIRO")) {
 
-        	    // Remove todos os botões
         	    editarButton.setVisible(false);
         	    salvarButton.setVisible(false);
         	    cancelarButton.setVisible(false);
         	    deletarButton.setVisible(false);
+
+        	    // Criação dos componentes
+        	    Checkbox pagoPelaAgenciaCheckbox = new Checkbox("Pago pela Agência");
+        	    Checkbox pagoAoVeiculoCheckbox = new Checkbox("Pago ao Veículo");
+
+        	    DatePicker dataPagamentoPelaAgenciaPicker = new DatePicker("Data de Pagamento pela Agência");
+        	    DatePicker dataPagamentoAoVeiculoPicker = new DatePicker("Data de Pagamento ao Veículo");
+
+        	    // Inicializar checkboxes com valores existentes
+        	    pagoPelaAgenciaCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoPelaAgencia()));
+        	    pagoAoVeiculoCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoParaVeiculo()));
+
+        	    if (pi.getDataConfirmadaPagamentoPelaAgencia() != null) {
+        	        java.sql.Date sqlDate = new java.sql.Date(pi.getDataConfirmadaPagamentoPelaAgencia().getTime());
+        	        dataPagamentoPelaAgenciaPicker.setValue(sqlDate.toLocalDate());
+        	    }
+
+        	    if (pi.getdataConfirmadaPagamentoParaVeiculo() != null) {
+        	        java.sql.Date sqlDateVeiculo = new java.sql.Date(pi.getdataConfirmadaPagamentoParaVeiculo().getTime());
+        	        dataPagamentoAoVeiculoPicker.setValue(sqlDateVeiculo.toLocalDate());
+        	    }
+
+        	    Button confirmarButton = new Button("Confirmar Pagamento", e -> {
+        	        try {
+        	            pi.setPagoPelaAgencia(pagoPelaAgenciaCheckbox.getValue());
+
+        	            LocalDate localDateAgencia = dataPagamentoPelaAgenciaPicker.getValue();
+        	            if (localDateAgencia != null) {
+        	                Date dataPagamentoAgencia = Date.from(localDateAgencia.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        	                pi.setDataConfirmadaPagamentoPelaAgencia(dataPagamentoAgencia);
+        	            } else {
+        	                pi.setDataConfirmadaPagamentoPelaAgencia(null);
+        	            }
+
+        	            if (pagoPelaAgenciaCheckbox.getValue()) {
+        	                pi.setResponsavelPagamentoAgencia(usuarioLogado.getNome());
+        	            }
+
+        	            pi.setPagoParaVeiculo(pagoAoVeiculoCheckbox.getValue());
+
+        	            LocalDate localDateVeiculo = dataPagamentoAoVeiculoPicker.getValue();
+        	            if (localDateVeiculo != null) {
+        	                Date dataPagamentoVeiculo = Date.from(localDateVeiculo.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        	                pi.setdataConfirmadaPagamentoParaVeiculo(dataPagamentoVeiculo);
+        	            } else {
+        	                pi.setdataConfirmadaPagamentoParaVeiculo(null);
+        	            }
+
+        	            if (pagoAoVeiculoCheckbox.getValue()) {
+        	                pi.setResponsavelPagamentoVeiculo(usuarioLogado.getNome());
+        	            }
+        	            
+        	            PIUpdateBroadcaster.broadcast();
+        	            pi.atualizarPagamentoFinanceiro();
+
+        	            Notification.show("Pagamento salvo com sucesso!");
+        	        } catch (Exception ex) {
+        	            Notification.show("Erro ao salvar: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+        	            ex.printStackTrace();
+        	        }
+        	    });
+
+        	    FormLayout financeiroForm = new FormLayout();
+        	    financeiroForm.add(
+        	        pagoPelaAgenciaCheckbox, dataPagamentoPelaAgenciaPicker,
+        	        pagoAoVeiculoCheckbox, dataPagamentoAoVeiculoPicker
+        	    );
+
+        	    VerticalLayout financeiroSection = new VerticalLayout(
+        	        financeiroForm,
+        	        confirmarButton
+        	    );
+        	    financeiroSection.setSpacing(true);
+        	    financeiroSection.setPadding(true);
+        	    financeiroSection.setWidthFull();
+
+        	    layout.add(financeiroSection);
         	}
         
-        PagamentoParaVeiculoPicker.setValue(toLocalDate(pi.getPagamentoParaVeiculo()));
-        PagamentoParaVeiculoPicker.setReadOnly(true);
+        dataConfirmadaPagamentoParaVeiculoPicker.setValue(toLocalDate(pi.getdataConfirmadaPagamentoParaVeiculo()));
+        dataConfirmadaPagamentoParaVeiculoPicker.setReadOnly(true);
 
-        dataPagamentoPelaAgenciaPicker.setValue(toLocalDate(pi.getDataPagamentoPelaAgencia()));
-        dataPagamentoPelaAgenciaPicker.setReadOnly(true);
+        dataConfirmadaPagamentoPelaAgenciaPicker.setValue(toLocalDate(pi.getDataConfirmadaPagamentoPelaAgencia()));
+        dataConfirmadaPagamentoPelaAgenciaPicker.setReadOnly(true);
 
         responsavelPagamentoVeiculoField.setValue(pi.getResponsavelPagamentoVeiculo() != null ? pi.getResponsavelPagamentoVeiculo() : "-");
         responsavelPagamentoVeiculoField.setReadOnly(true);
@@ -510,10 +591,7 @@ public class PIView extends Dialog {
         responsavelPagamentoAgenciaField.setValue(pi.getResponsavelPagamentoAgencia() != null ? pi.getResponsavelPagamentoAgencia() : "-");
         responsavelPagamentoAgenciaField.setReadOnly(true);
 
-        VerticalLayout layout = new VerticalLayout(title, layoutInfosGerais, formLayout, buttonBar);
-        layout.setPadding(true);
-        layout.setSpacing(true);
-        layout.setWidthFull();
+        
 
         add(layout);
     }

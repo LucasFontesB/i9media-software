@@ -307,6 +307,7 @@ public class DashboardExecutivoView extends Dashboard {
 
     @Override
     protected boolean temPermissao(Usuario user) {
-        return "executivo".equalsIgnoreCase(user.getDepartamento());
+        String dept = user.getDepartamento();
+        return "executivo".equalsIgnoreCase(dept) || "adm".equalsIgnoreCase(dept);
     }
 }

@@ -9,6 +9,20 @@
 	box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.6);
 }
 
+.vencido {
+  background-color: #ffe6e6; 
+  color: #b30000;
+  font-weight: bold;
+}
+
+.linha-paga {
+    background-color: #d4edda !important;
+}
+
+.linha-vencida {
+    background-color: #f8d7da !important; 
+}
+
 .loginButton{
 	background-color: #FFAE00;
 	margin-top: 60px;

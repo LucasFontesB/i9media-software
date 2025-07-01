@@ -193,7 +193,8 @@ public class DashboardPlanejamentoView extends Dashboard{
 	
 	@Override
 	protected boolean temPermissao(Usuario user) {
-        return "planejamento".equalsIgnoreCase(user.getDepartamento());
-    }
+	    String dept = user.getDepartamento();
+	    return "planejamento".equalsIgnoreCase(dept) || "adm".equalsIgnoreCase(dept);
+	}
 
 }
