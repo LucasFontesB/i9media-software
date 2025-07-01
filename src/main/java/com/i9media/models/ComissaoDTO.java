@@ -122,14 +122,14 @@ public class ComissaoDTO implements Serializable {
             JOIN agencia a ON pi.agencia_id = a.id
             JOIN clientes c ON pi.cliente_id = c.id
             JOIN executivos e ON pi.executivo_id = e.id
-            WHERE pi.vencimentopiagencia BETWEEN ? AND ?
+            WHERE pi.vencimentopiagencia >= ? AND pi.vencimentopiagencia <= ?
         """;
 
         try (Connection conn = Conectar.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setDate(1, java.sql.Date.valueOf(dataInicio));
-            stmt.setDate(2, java.sql.Date.valueOf(dataFim));
+
+            stmt.setTimestamp(1, java.sql.Timestamp.valueOf(dataInicio.atStartOfDay()));
+            stmt.setTimestamp(2, java.sql.Timestamp.valueOf(dataFim.atTime(23, 59, 59)));
 
             ResultSet rs = stmt.executeQuery();
             List<ComissaoDTO> resultados = new ArrayList<>();

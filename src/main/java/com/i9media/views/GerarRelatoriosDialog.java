@@ -5,26 +5,35 @@ import java.math.BigDecimal;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import com.i9media.models.ComissaoDTO;
+import com.i9media.models.ContaPagarDTO;
+import com.i9media.models.ContaReceberDTO;
 import com.i9media.models.Executivo;
+import com.i9media.models.ResumoComissaoDTO;
+import com.i9media.models.Usuario;
 import com.i9media.utils.PDFUtils;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.notification.Notification;
@@ -33,8 +42,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinSession;
 
 public class GerarRelatoriosDialog extends Dialog {
+	
+	Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
 
     public GerarRelatoriosDialog() {
     	setCloseOnOutsideClick(false);
@@ -85,26 +97,30 @@ public class GerarRelatoriosDialog extends Dialog {
         // Seleção de executivo
         ComboBox<Executivo> comboExecutivo = new ComboBox<>("Executivo");
         comboExecutivo.setItemLabelGenerator(Executivo::getNome);
-
-        List<Executivo> executivos = Executivo.buscarTodosNomes(); // Sua função existente
+        List<Executivo> executivos = Executivo.buscarTodosNomes();
         Executivo todos = new Executivo();
         todos.setNome("Todos");
-        executivos.add(0, todos); // Adiciona opção "Todos" no topo da lista
-
+        executivos.add(0, todos);
         comboExecutivo.setItems(executivos);
         comboExecutivo.setValue(todos);
         comboExecutivo.setPlaceholder("Todos os Executivos");
         comboExecutivo.setClearButtonVisible(true);
 
-        // Radio para seleção de tipo de filtro
+        // Tipo relatório Detalhado / Resumido
+        RadioButtonGroup<String> tipoRelatorio = new RadioButtonGroup<>();
+        tipoRelatorio.setLabel("Tipo de Relatório");
+        tipoRelatorio.setItems("Detalhado", "Resumido");
+        tipoRelatorio.setValue("Detalhado");  // padrão
+
+        // Radio para seleção de tipo de filtro (mês/período)
         RadioButtonGroup<String> tipoFiltro = new RadioButtonGroup<>();
         tipoFiltro.setLabel("Filtrar por:");
         tipoFiltro.setItems("Mês", "Período");
         tipoFiltro.setValue("Mês");
 
-        // Campos de data
         ComboBox<String> comboMes = new ComboBox<>("Mês");
-        comboMes.setItems("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro");
+        comboMes.setItems("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                          "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro");
         comboMes.setValue(LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, new Locale("pt", "BR")));
 
         DatePicker dataInicial = new DatePicker("Data Inicial");
@@ -117,24 +133,34 @@ public class GerarRelatoriosDialog extends Dialog {
             dataFinal.setVisible(!isMes);
         });
 
-        // Grid para exibir comissões
-        Grid<ComissaoDTO> gridComissoes = new Grid<>(ComissaoDTO.class, false);
-        gridComissoes.setWidthFull();
-        gridComissoes.setHeight("300px");
-        gridComissoes.addColumn(ComissaoDTO::getExecutivo).setHeader("Executivo");
-        gridComissoes.addColumn(ComissaoDTO::getCliente).setHeader("Cliente");
-        gridComissoes.addColumn(ComissaoDTO::getAgencia).setHeader("Agência");
-        gridComissoes.addColumn(dto -> formatarMoeda(dto.getValorLiquidoFinal())).setHeader("Valor Líquido");
-        gridComissoes.addColumn(dto -> dto.getPorcentagemGanho() + "%").setHeader("Porcentagem");
-        gridComissoes.addColumn(dto -> formatarMoeda(dto.getComissaoCalculada())).setHeader("Comissão");
-        gridComissoes.setVisible(false);  // começa invisível
+     // Grid detalhado
+        Grid<ComissaoDTO> gridDetalhado = new Grid<>(ComissaoDTO.class, false);
+        gridDetalhado.addColumn(ComissaoDTO::getExecutivo).setHeader("Executivo");
+        gridDetalhado.addColumn(ComissaoDTO::getCliente).setHeader("Cliente");
+        gridDetalhado.addColumn(ComissaoDTO::getAgencia).setHeader("Agência");
+        gridDetalhado.addColumn(dto -> formatarMoeda(dto.getValorLiquidoFinal())).setHeader("Valor Líquido");
+        gridDetalhado.addColumn(dto -> dto.getPorcentagemGanho() + "%").setHeader("% Ganho");
+        gridDetalhado.addColumn(dto -> dto.getVencimento() != null ? dto.getVencimento().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "")
+                     .setHeader("Vencimento");
+        gridDetalhado.setWidthFull();
+        gridDetalhado.setHeight("300px");
+
+        // Grid resumido
+        Grid<ResumoComissaoDTO> gridResumido = new Grid<>(ResumoComissaoDTO.class, false);
+        gridResumido.addColumn(ResumoComissaoDTO::getExecutivo).setHeader("Executivo");
+        gridResumido.addColumn(ResumoComissaoDTO::getTotalPis).setHeader("Total de PIs");
+        gridResumido.addColumn(dto -> formatarMoeda(dto.getTotalComissao())).setHeader("Valor da Comissão");
+        gridResumido.setWidthFull();
+        gridResumido.setHeight("300px");
+        gridResumido.setVisible(false);
+        
 
         // Botões
         HorizontalLayout botoes = new HorizontalLayout();
         Button gerar = new Button("Gerar", e -> {
             Executivo selecionado = comboExecutivo.getValue();
-
             List<ComissaoDTO> resultados = new ArrayList<>();
+
             try {
                 if (selecionado != null && "Todos".equalsIgnoreCase(selecionado.getNome())) {
                     if ("Mês".equals(tipoFiltro.getValue())) {
@@ -167,43 +193,141 @@ public class GerarRelatoriosDialog extends Dialog {
                         }
                     }
                 }
-                gridComissoes.setItems(resultados);
-                gridComissoes.setVisible(true);
+
+                boolean detalhado = "Detalhado".equals(tipoRelatorio.getValue());
+
+                if (detalhado) {
+                    gridDetalhado.setItems(resultados);
+                    gridDetalhado.setVisible(true);
+                    gridResumido.setVisible(false);
+                } else {
+                    // Agrupar para resumo
+                    Map<String, List<ComissaoDTO>> agrupado = resultados.stream()
+                        .collect(Collectors.groupingBy(ComissaoDTO::getExecutivo));
+
+                    List<ResumoComissaoDTO> resumo = agrupado.entrySet().stream()
+                    	    .map(entry -> {
+                    	        String executivo = entry.getKey();
+                    	        List<ComissaoDTO> lista = entry.getValue();
+                    	        int totalPis = lista.size();
+                    	        BigDecimal totalComissao = lista.stream()
+                    	            .map(c -> c.getComissaoCalculada() != null ? c.getComissaoCalculada() : BigDecimal.ZERO)
+                    	            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    	        return new ResumoComissaoDTO(executivo, totalPis, totalComissao);
+                    	    })
+                    	    .collect(Collectors.toList());
+
+                    gridResumido.setItems(resumo);
+                    gridResumido.setVisible(true);
+                    gridDetalhado.setVisible(false);
+                }
 
                 Notification.show("Relatório gerado com sucesso!", 3000, Notification.Position.MIDDLE);
+
             } catch (Exception ex) {
                 Notification.show("Erro ao gerar relatório: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
             }
         });
+        
+        Div downloadContainer = new Div();
+        downloadContainer.getStyle().set("text-align", "center");
+
         Button gerarPdf = new Button("Gerar PDF", e -> {
             System.out.println("[PDF] Botão clicado");
+            
+            int mes = LocalDate.now().getMonthValue();
+            int ano = LocalDate.now().getYear();
+            String nomeExecutivo = "todos";
 
             Executivo selecionado = comboExecutivo.getValue();
             List<ComissaoDTO> resultados = new ArrayList<>();
 
             try {
-                // Busca os dados (exemplo simplificado)
                 if (selecionado != null && "Todos".equalsIgnoreCase(selecionado.getNome())) {
-                    System.out.println("[PDF] Gerando relatório para TODOS os executivos");
-                    int mes = comboMes.getValue() != null ? mesNomeParaNumero(comboMes.getValue()) : LocalDate.now().getMonthValue();
-                    int ano = LocalDate.now().getYear();
-                    resultados = ComissaoDTO.buscarComissaoTodosExecutivos(mes, ano);
+                    if ("Mês".equals(tipoFiltro.getValue())) {
+                        mes = comboMes.getValue() != null ? mesNomeParaNumero(comboMes.getValue()) : LocalDate.now().getMonthValue();
+                        ano = LocalDate.now().getYear();
+                        System.out.println("[PDF DEBUG] Busca TODOS executivos por mês: " + mes + "/" + ano);
+                        resultados = ComissaoDTO.buscarComissaoTodosExecutivos(mes, ano);
+                    } else {
+                        LocalDate inicio = dataInicial.getValue();
+                        LocalDate fim = dataFinal.getValue();
+                        System.out.println("[PDF DEBUG] Busca TODOS executivos por período: " + inicio + " a " + fim);
+                        if (inicio != null && fim != null) {
+                            resultados = ComissaoDTO.buscarComissaoTodosExecutivos(inicio, fim);
+                        } else {
+                            Notification.show("Por favor, selecione o período completo", 3000, Notification.Position.MIDDLE);
+                            return;
+                        }
+                    }
                 } else if (selecionado != null) {
-                    System.out.println("[PDF] Gerando relatório para o executivo: " + selecionado.getNome());
-                    int mes = comboMes.getValue() != null ? mesNomeParaNumero(comboMes.getValue()) : LocalDate.now().getMonthValue();
-                    int ano = LocalDate.now().getYear();
-                    resultados = ComissaoDTO.buscarComissaoPorExecutivo(selecionado.getNome(), mes, ano);
+                    if ("Mês".equals(tipoFiltro.getValue())) {
+                        mes = comboMes.getValue() != null ? mesNomeParaNumero(comboMes.getValue()) : LocalDate.now().getMonthValue();
+                        ano = LocalDate.now().getYear();
+                        nomeExecutivo = selecionado.getNome().toLowerCase().replace(" ", "-");
+                        System.out.println("[PDF DEBUG] Busca EXECUTIVO " + selecionado.getNome() + " por mês: " + mes + "/" + ano);
+                        resultados = ComissaoDTO.buscarComissaoPorExecutivo(selecionado.getNome(), mes, ano);
+                    } else {
+                        LocalDate inicio = dataInicial.getValue();
+                        LocalDate fim = dataFinal.getValue();
+                        System.out.println("[PDF DEBUG] Busca EXECUTIVO " + selecionado.getNome() + " por período: " + inicio + " a " + fim);
+                        if (inicio != null && fim != null) {
+                            resultados = ComissaoDTO.buscarComissaoPorExecutivo(selecionado.getNome(), inicio, fim);
+                        } else {
+                            Notification.show("Por favor, selecione o período completo", 3000, Notification.Position.MIDDLE);
+                            return;
+                        }
+                    }
                 }
 
-                System.out.println("[PDF] Total de registros encontrados: " + resultados.size());
                 if (resultados.isEmpty()) {
                     Notification.show("Nenhum dado para gerar PDF", 3000, Notification.Position.MIDDLE);
                     return;
                 }
+                
+                
 
-                byte[] pdfBytes = PDFUtils.gerarRelatorioComissoesPDF(resultados);
-                StreamResource resource = new StreamResource("relatorio-comissoes.pdf", () -> new ByteArrayInputStream(pdfBytes));
+                boolean detalhado = tipoRelatorio.getValue().equals("Detalhado");
+                byte[] pdfBytes;
+
+                if ("Mês".equals(tipoFiltro.getValue())) {
+                    String mesNome = comboMes.getValue(); 
+                    Integer anoBusca1 = LocalDate.now().getYear(); 
+                    
+                    pdfBytes = PDFUtils.gerarRelatorioComissoesPDF(
+                        resultados,
+                        usuarioLogado.getNome(),
+                        detalhado,
+                        null, 
+                        null, 
+                        mesNome,
+                        anoBusca1
+                    );
+                } else {
+                    LocalDate inicio = dataInicial.getValue();
+                    LocalDate fim = dataFinal.getValue();
+                    
+                    pdfBytes = PDFUtils.gerarRelatorioComissoesPDF(
+                        resultados,
+                        usuarioLogado.getNome(),
+                        detalhado,
+                        inicio,
+                        fim,
+                        null,     
+                        null  
+                    );
+                }
+
+                LocalDateTime agora = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+
+                String dataHoraFormatada = agora.format(formatter);
+                String tipo = detalhado ? "detalhado" : "resumido";
+                String nomeArquivo = String.format("relatorio-%s--%02d-%d--%s.pdf", tipo, mes, ano, dataHoraFormatada);
+                StreamResource resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
                 resource.setContentType("application/pdf");
+                
+                
 
                 Anchor downloadLink = new Anchor(resource, "Clique aqui para baixar o PDF");
                 downloadLink.getElement().setAttribute("download", true);
@@ -212,25 +336,31 @@ public class GerarRelatoriosDialog extends Dialog {
                 downloadLink.getStyle().set("font-weight", "bold");
                 downloadLink.getStyle().set("cursor", "pointer");
                 downloadLink.getStyle().set("margin", "10px 0");
+                
+                downloadContainer.removeAll();
 
-                dialog.add(downloadLink);  // layoutPrincipal é seu layout visível
+                downloadContainer.add(downloadLink); 
+
             } catch (Exception ex) {
                 Notification.show("Erro ao gerar PDF: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
                 ex.printStackTrace();
             }
         });
-        Button cancelar = new Button("Cancelar", e -> dialog.close());
 
+        Button cancelar = new Button("Cancelar", e -> dialog.close());
         botoes.add(gerar, cancelar, gerarPdf);
 
-        layout.add(titulo,
+        layout.add(
+            titulo,
             comboExecutivo,
             tipoFiltro,
             comboMes,
             dataInicial,
             dataFinal,
+            tipoRelatorio,
             botoes,
-            gridComissoes
+            downloadContainer,
+            gridDetalhado, gridResumido
         );
 
         comboMes.setVisible(true);
@@ -241,7 +371,6 @@ public class GerarRelatoriosDialog extends Dialog {
         dialog.open();
     }
 
-    // Helper para converter nome do mês em número
     private int mesNomeParaNumero(String nomeMes) {
         switch (nomeMes.toLowerCase(new Locale("pt", "BR"))) {
             case "janeiro": return 1;
@@ -260,17 +389,276 @@ public class GerarRelatoriosDialog extends Dialog {
         }
     }
 
-    // Exemplo do método de formatação (implemente conforme seu código)
     private String formatarMoeda(BigDecimal valor) {
         if (valor == null) return "R$ 0,00";
         return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
     }
 
     private void gerarContasAPagar() {
-        Notification.show("Relatório de Contas a Pagar gerado!", 3000, Notification.Position.MIDDLE);
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnOutsideClick(false);
+        dialog.setWidth("800px");
+        dialog.setHeight("700px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+
+        H4 titulo = new H4("Relatório de Contas a Pagar");
+        titulo.getStyle().set("text-align", "center");
+
+        DatePicker dataInicial = new DatePicker("Data Inicial");
+        DatePicker dataFinal = new DatePicker("Data Final");
+
+        Checkbox incluirPagasCheckbox = new Checkbox("Incluir contas pagas");
+
+        Grid<ContaPagarDTO> grid = new Grid<>(ContaPagarDTO.class, false);
+        grid.addColumn(ContaPagarDTO::getVeiculo).setHeader("Veículo");
+        grid.addColumn(ContaPagarDTO::getValorFormatado).setHeader("Valor");
+        grid.addColumn(dto -> dto.getDataPagamento().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Data de Pagamento");
+        grid.addColumn(ContaPagarDTO::getStatus).setHeader("Status");
+        grid.setWidthFull();
+        grid.setHeight("400px");
+
+        List<ContaPagarDTO> listaContas = new ArrayList<>();
+
+        Button gerar = new Button("Gerar", e -> {
+            LocalDate inicio = dataInicial.getValue();
+            LocalDate fim = dataFinal.getValue();
+
+            if (inicio == null || fim == null) {
+                Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            listaContas.clear();
+            List<ContaPagarDTO> todas = ContaPagarDTO.buscarPorPeriodo(inicio, fim);
+
+            if (!incluirPagasCheckbox.getValue()) {
+                todas = todas.stream()
+                    .filter(c -> c.getStatus().equalsIgnoreCase("PENDENTE"))
+                    .collect(Collectors.toList());
+            }
+
+            listaContas.addAll(todas);
+            grid.setItems(listaContas);
+            Notification.show("Relatório gerado com sucesso!", 3000, Notification.Position.MIDDLE);
+        });
+
+        Div pdfDownloadContainer = new Div(); 
+         
+
+        Button gerarPDF = new Button("Gerar PDF", e -> {
+            LocalDate inicio = dataInicial.getValue();
+            LocalDate fim = dataFinal.getValue();
+
+            if (inicio == null || fim == null) {
+                Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            List<ContaPagarDTO> todas = ContaPagarDTO.buscarPorPeriodo(inicio, fim);
+
+            if (!incluirPagasCheckbox.getValue()) {
+                todas = todas.stream()
+                    .filter(c -> c.getStatus().equalsIgnoreCase("PENDENTE"))
+                    .collect(Collectors.toList());
+            }
+
+            if (todas.isEmpty()) {
+                Notification.show("Nenhuma conta encontrada para o período selecionado.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            try {
+                byte[] pdfBytes = PDFUtils.gerarRelatorioContasAPagarPDF(
+                    todas,
+                    usuarioLogado.getNome(),
+                    inicio,
+                    fim
+                );
+
+                LocalDate dataInicio = dataInicial.getValue();
+                LocalDate dataFim = dataFinal.getValue();
+                
+                StreamResource resource = null;
+
+                if (dataInicio != null && dataFim != null) {
+                    DateTimeFormatter dtfData = DateTimeFormatter.ofPattern("ddMMyyyy");
+                    DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HHmm");
+
+                    String dataInicioStr = dataInicio.format(dtfData);
+                    String dataFimStr = dataFim.format(dtfData);
+                    String dataHoraStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyy_HHmm"));
+
+                    String nomeArquivo = String.format("relatorio-contas-a-pagar-%s-a-%s-gerado-em-%s.pdf", dataInicioStr, dataFimStr, dataHoraStr);
+
+                    resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
+                    // resto do código
+                } else {
+                    Notification.show("Selecione as datas para gerar o nome do arquivo.", 3000, Notification.Position.MIDDLE);
+                }
+
+                resource.setContentType("application/pdf");
+
+                Anchor downloadLink = new Anchor(resource, "Clique aqui para baixar o PDF");
+                downloadLink.getElement().setAttribute("download", true);
+                downloadLink.setTarget("_blank");
+                downloadLink.getStyle().set("color", "blue");
+                downloadLink.getStyle().set("font-weight", "bold");
+                downloadLink.getStyle().set("text-align", "center");
+                downloadLink.getStyle().set("display", "block");
+                downloadLink.getStyle().set("margin-top", "15px");
+
+                pdfDownloadContainer.removeAll();
+                pdfDownloadContainer.add(downloadLink);
+
+            } catch (Exception ex) {
+                Notification.show("Erro ao gerar PDF: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+                ex.printStackTrace();
+            }
+        });
+
+        Button fechar = new Button("Fechar", e -> dialog.close());
+
+        HorizontalLayout botoes = new HorizontalLayout(gerar, fechar, gerarPDF);
+        layout.add(titulo, dataInicial, dataFinal, incluirPagasCheckbox, botoes, pdfDownloadContainer, grid);
+        dialog.add(layout);
+        dialog.open();
     }
 
     private void gerarContasAReceber() {
-        Notification.show("Relatório de Contas a Receber gerado!", 3000, Notification.Position.MIDDLE);
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnOutsideClick(true);
+        dialog.setWidth("800px");
+        dialog.setHeight("700px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+
+        H4 titulo = new H4("Relatório de Contas a Receber");
+        titulo.getStyle().set("text-align", "center");
+
+        DatePicker dataInicial = new DatePicker("Data Inicial");
+        DatePicker dataFinal = new DatePicker("Data Final");
+
+        Checkbox incluirPagas = new Checkbox("Incluir contas já pagas");
+        incluirPagas.setValue(false);
+
+        Grid<ContaReceberDTO> grid = new Grid<>(ContaReceberDTO.class, false);
+        grid.addColumn(ContaReceberDTO::getCliente).setHeader("Cliente");
+        grid.addColumn(ContaReceberDTO::getValorFormatado).setHeader("Valor");
+        grid.addColumn(dto -> dto.getDataVencimento().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Data de Vencimento");
+        grid.addColumn(ContaReceberDTO::getStatus).setHeader("Status");
+        grid.setWidthFull();
+        grid.setHeight("400px");
+
+
+        Button gerar = new Button("Gerar", e -> {
+        	List<ContaReceberDTO> listaContas = new ArrayList<>();
+            LocalDate inicio = dataInicial.getValue();
+            LocalDate fim = dataFinal.getValue();
+
+            if (inicio == null || fim == null) {
+                Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            listaContas.clear();
+            listaContas.addAll(ContaReceberDTO.buscarPorPeriodo(inicio, fim));
+
+            if (!incluirPagas.getValue()) {
+                listaContas.removeIf(c -> c.isPago());
+            }
+
+            // 🔶 Ordenar por data de vencimento (crescente)
+            listaContas.sort(Comparator.comparing(ContaReceberDTO::getDataVencimento));
+
+            grid.setItems(listaContas);
+            Notification.show("Relatório gerado com sucesso!", 3000, Notification.Position.MIDDLE);
+        });
+
+        Div pdfDownloadContainer = new Div();
+
+        Button gerarPDF = new Button("Gerar PDF", e -> {
+        	List<ContaReceberDTO> listaContas = new ArrayList<>();
+            LocalDate inicio = dataInicial.getValue();
+            LocalDate fim = dataFinal.getValue();
+
+            if (inicio == null || fim == null) {
+                Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            List<ContaReceberDTO> todas = ContaReceberDTO.buscarPorPeriodo(inicio, fim);
+
+            if (!incluirPagas.getValue()) {
+                todas = todas.stream()
+                    .filter(c -> c.getStatus().equalsIgnoreCase("PENDENTE"))
+                    .collect(Collectors.toList());
+            }
+
+            if (todas.isEmpty()) {
+                Notification.show("Nenhuma conta encontrada para o período selecionado.", 3000, Notification.Position.MIDDLE);
+                return;
+            }
+
+            try {
+                byte[] pdfBytes = PDFUtils.gerarRelatorioContasAReceberPDF(
+                    todas,
+                    usuarioLogado.getNome(),
+                    inicio,
+                    fim
+                );
+
+                LocalDate dataInicio = dataInicial.getValue();
+                LocalDate dataFim = dataFinal.getValue();
+                
+                StreamResource resource = null;
+
+                if (dataInicio != null && dataFim != null) {
+                    DateTimeFormatter dtfData = DateTimeFormatter.ofPattern("ddMMyyyy");
+                    DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HHmm");
+
+                    String dataInicioStr = dataInicio.format(dtfData);
+                    String dataFimStr = dataFim.format(dtfData);
+                    String dataHoraStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyy_HHmm"));
+
+                    String nomeArquivo = String.format("relatorio-contas-a-receber-%s-a-%s-gerado-em-%s.pdf", dataInicioStr, dataFimStr, dataHoraStr);
+
+                    resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
+                    // resto do código
+                } else {
+                    Notification.show("Selecione as datas para gerar o nome do arquivo.", 3000, Notification.Position.MIDDLE);
+                }
+
+                resource.setContentType("application/pdf");
+
+                Anchor downloadLink = new Anchor(resource, "Clique aqui para baixar o PDF");
+                downloadLink.getElement().setAttribute("download", true);
+                downloadLink.setTarget("_blank");
+                downloadLink.getStyle().set("color", "blue");
+                downloadLink.getStyle().set("font-weight", "bold");
+                downloadLink.getStyle().set("text-align", "center");
+                downloadLink.getStyle().set("display", "block");
+                downloadLink.getStyle().set("margin-top", "15px");
+
+                pdfDownloadContainer.removeAll();
+                pdfDownloadContainer.add(downloadLink);
+
+            } catch (Exception ex) {
+                Notification.show("Erro ao gerar PDF: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+                ex.printStackTrace();
+            }
+        });
+
+        Button fechar = new Button("Fechar", e -> dialog.close());
+
+        HorizontalLayout botoes = new HorizontalLayout(gerar, fechar, gerarPDF);
+
+        layout.add(titulo, dataInicial, dataFinal, incluirPagas, botoes, pdfDownloadContainer, grid);
+        dialog.add(layout);
+        dialog.open();
     }
 }

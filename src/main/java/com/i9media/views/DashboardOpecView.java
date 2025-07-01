@@ -80,12 +80,6 @@ public class DashboardOpecView extends Dashboard{
 	        	adicionarCliente.open();
 	        });
 	        
-	        Button cadastrar = new Button("cadastrar usuario", event -> {
-	        	CriarUsuarioDialog adicionarUsuario = new CriarUsuarioDialog();
-	        	adicionarUsuario.open();
-	        });
-	        
-	        
 	        List<PedidoInsercao> lista = PedidoInsercao.buscarTodos();
 	        int total = lista.size();
 
@@ -121,7 +115,7 @@ public class DashboardOpecView extends Dashboard{
             	.set("font-weight", "bold");
 	        
 
-	        header.add(titulo, cadastrar, btnAdicionarCliente, btnAdicionarAgencia, btnAdicionar);
+	        header.add(titulo, btnAdicionarCliente, btnAdicionarAgencia, btnAdicionar);
 	        header.expand(titulo);      
 	        
 	        grid.addColumn(pedido -> {

@@ -1,5 +1,6 @@
 package com.i9media.utils;
 
+import com.i9media.views.DashboardADMView;
 import com.i9media.views.DashboardFinanceiroView;
 import com.i9media.views.DashboardOpecView;
 import com.vaadin.flow.component.UI;
@@ -24,6 +25,10 @@ public class PIUpdateBroadcaster {
                 	
                 	if (component instanceof DashboardFinanceiroView) {
                         ((DashboardFinanceiroView) component).atualizarTudo();
+                    }
+                	
+                	if (component instanceof DashboardADMView) {
+                        ((DashboardADMView) component).atualizarValoresCards();
                     }
 
                     if (component instanceof DashboardOpecView) {

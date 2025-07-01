@@ -1,16 +1,30 @@
 package com.i9media.views;
 
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+
+import com.i9media.CriarCard;
+import com.i9media.CriarCard.CardComponent;
+import com.i9media.Service.DashboardService;
 import com.i9media.NavegadorDashboards;
+import com.i9media.models.PIDTO;
+import com.i9media.models.PedidoInsercao;
 import com.i9media.models.Usuario;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
@@ -23,6 +37,13 @@ public class DashboardADMView extends Dashboard {
 
     private VerticalLayout menuLateral;
     private VerticalLayout conteudoPrincipal;
+    
+    private CardComponent cardReceber;
+    private CardComponent cardPagar;
+    private CardComponent cardSaldoProjetado;
+    
+    private Grid<PedidoInsercao> gridPagar;
+    private Grid<PedidoInsercao> gridReceber;
 
     public DashboardADMView() {
         super();
@@ -31,26 +52,80 @@ public class DashboardADMView extends Dashboard {
     @Override
     protected Component construirConteudo() {
         setSizeFull();
+
         HorizontalLayout layoutPrincipal = new HorizontalLayout();
         layoutPrincipal.setSizeFull();
+        layoutPrincipal.setPadding(false);
+        layoutPrincipal.setSpacing(false);
 
-        // Construir menu lateral
+        // Menu lateral fixo à esquerda, altura cheia
         menuLateral = criarMenuLateral();
+        menuLateral.setHeightFull();
+        menuLateral.getStyle().set("margin-top", "64px");
 
-        // Construir área principal onde o conteúdo da dashboard será trocado
+        // Conteúdo principal (cards e outros)
         conteudoPrincipal = new VerticalLayout();
         conteudoPrincipal.setSizeFull();
         conteudoPrincipal.setPadding(true);
         conteudoPrincipal.setSpacing(true);
 
-        // Inicialmente mostrar uma visão geral administrativa
-        conteudoPrincipal.add(criarResumoAdministrativo());
+        HorizontalLayout cardsLayout = new HorizontalLayout();
+        cardsLayout.setWidthFull();
+        cardsLayout.setSpacing(true);
+        cardsLayout.setPadding(false);
+        cardsLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+        cardsLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        cardsLayout.getStyle().set("margin-bottom", "30px");
+        cardsLayout.getStyle().set("margin-top", "60px");
+
+        cardReceber = CriarCard.Criar("Contas a Receber", "R$ 0,00");
+        cardPagar = CriarCard.Criar("Contas a Pagar", "R$ 0,00");
+        cardSaldoProjetado = CriarCard.Criar("Saldo Projetado", "R$ 0,00");
+
+        configurarClickCard(cardReceber.layout, () -> new ContasReceberDialog().open());
+        configurarClickCard(cardPagar.layout, () -> new ContasPagarDialog().open());
+
+        cardsLayout.add(cardReceber.layout, cardPagar.layout, cardSaldoProjetado.layout);
+        conteudoPrincipal.add(cardsLayout);
+        atualizarValoresCards();
 
         layoutPrincipal.add(menuLateral, conteudoPrincipal);
-        layoutPrincipal.expand(conteudoPrincipal);
+        layoutPrincipal.setFlexGrow(1, conteudoPrincipal); 
 
-        // NÃO chame add() aqui! Só retorne o layout criado
         return layoutPrincipal;
+    }
+    
+    public void atualizarValoresCards() {
+        try {
+            BigDecimal valorReceber = BigDecimal.valueOf(DashboardService.obterContasReceberMesAtual());
+            cardReceber.setValor(formatarMoeda(valorReceber));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BigDecimal valorPagar = BigDecimal.valueOf(DashboardService.obterContasPagarMesAtual());
+            cardPagar.setValor(formatarMoeda(valorPagar));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BigDecimal contasReceber = BigDecimal.valueOf(DashboardService.obterContasReceberMesAtual());
+            BigDecimal contasPagar = BigDecimal.valueOf(DashboardService.obterContasPagarMesAtual());
+            BigDecimal saldoProjetado = contasReceber.subtract(contasPagar);
+            cardSaldoProjetado.setValor(formatarMoeda(saldoProjetado));
+
+            if (saldoProjetado.compareTo(BigDecimal.ZERO) >= 0) {
+                cardSaldoProjetado.valorLabel.getStyle().set("color", "green");
+                cardSaldoProjetado.layout.getElement().getStyle().set("background-color", "#d4edda");
+            } else {
+                cardSaldoProjetado.valorLabel.getStyle().set("color", "red");
+                cardSaldoProjetado.layout.getElement().getStyle().set("background-color", "#f8d7da");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -61,66 +136,65 @@ public class DashboardADMView extends Dashboard {
         menu.setSpacing(true);
         menu.getStyle().set("background-color", "#f0f0f0");
 
-        // Botões para navegação
         Button btnOpec = new Button("Dashboard OPEC", e -> UI.getCurrent().navigate("dashboard-opec"));
         Button btnPlanejamento = new Button("Dashboard Planejamento", e -> UI.getCurrent().navigate("dashboard-planejamento"));
         Button btnFinanceiro = new Button("Dashboard Financeiro", e -> UI.getCurrent().navigate("dashboard-financeiro"));
         Button btnExecutivo = new Button("Dashboard Executivo", e -> UI.getCurrent().navigate("dashboard-vendas"));
+        Button cadastrar = new Button("Cadastrar Usuario", event -> {
+        	CriarUsuarioDialog adicionarUsuario = new CriarUsuarioDialog();
+        	adicionarUsuario.open();
+        });
 
-        // Botão estratégico para gerar relatórios
         Button btnRelatorios = new Button("Gerar Relatórios", e -> new GerarRelatoriosDialog().open());
 
-        // Estilo básico para botões
-        for (Button btn : new Button[]{btnOpec, btnPlanejamento, btnFinanceiro, btnExecutivo, btnRelatorios}) {
+        for (Button btn : new Button[]{btnOpec, btnPlanejamento, btnFinanceiro, btnExecutivo, btnRelatorios, cadastrar}) {
             btn.setWidthFull();
             btn.getStyle().set("margin-bottom", "10px");
         }
 
-        menu.add(btnOpec, btnPlanejamento, btnFinanceiro, btnExecutivo, btnRelatorios);
+        menu.add(btnOpec, btnPlanejamento, btnFinanceiro, btnExecutivo, btnRelatorios, cadastrar);
 
         return menu;
     }
+    
+    private void configurarClickCard(Component cardLayout, Runnable onDoubleClick) {
+        VerticalLayout layout = (VerticalLayout) cardLayout;
+        layout.getElement().setProperty("lastClickTime", "0");
 
-    private Component criarResumoAdministrativo() {
-        VerticalLayout resumo = new VerticalLayout();
-        resumo.setWidthFull();
+        layout.addClickListener(event -> {
+            long now = System.currentTimeMillis();
+            long lastClick = Long.parseLong(layout.getElement().getProperty("lastClickTime"));
 
-        H3 titulo = new H3("Resumo Administrativo");
-
-        // Exemplos de indicadores importantes para o ADM
-        Span totalPIs = new Span("Total de PIs cadastrados: " + buscarTotalPIs());
-        Span pisPendentes = new Span("PIs pendentes de aprovação: " + buscarPIsPendentes());
-        Span relatoriosGerados = new Span("Relatórios gerados este mês: " + buscarRelatoriosGerados());
-
-        resumo.add(titulo, totalPIs, pisPendentes, relatoriosGerados);
-
-        return resumo;
+            if (now - lastClick < 400) {
+                onDoubleClick.run();
+            }
+            layout.getElement().setProperty("lastClickTime", String.valueOf(now));
+        });
     }
+    
+    public void atualizarTudo() {
+        atualizarValoresCards();
 
-    private int buscarTotalPIs() {
-        // TODO: implementar consulta ao banco
-        return 1234;
+        try {
+            List<PedidoInsercao> pagar = PedidoInsercao.buscarAPagarNosProximosDias();
+            gridPagar.setItems(pagar);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            List<PedidoInsercao> receber = PedidoInsercao.buscarAReceberNosProximosDias();
+            gridReceber.setItems(receber);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        atualizarValoresCards();
     }
-
-    private int buscarPIsPendentes() {
-        // TODO: implementar consulta ao banco
-        return 56;
-    }
-
-    private int buscarRelatoriosGerados() {
-        // TODO: implementar consulta ao banco
-        return 12;
-    }
-
-    private void navegarPara(String dashboard) {
-        conteudoPrincipal.removeAll();
-        // TODO: substituir pelo conteúdo real de cada dashboard
-        conteudoPrincipal.add(new H2("Dashboard " + dashboard + " (em construção)"));
-    }
-
-    private void gerarRelatorios() {
-        // TODO: abrir diálogo ou tela para geração de relatórios
-        Notification.show("Função Gerar Relatórios ainda não implementada.", 3000, Notification.Position.MIDDLE);
+    
+    private String formatarMoeda(BigDecimal valor) {
+        if (valor == null) return "R$ 0,00";
+        return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
     }
 
     @Override

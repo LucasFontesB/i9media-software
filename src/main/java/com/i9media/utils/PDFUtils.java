@@ -1,76 +1,402 @@
 package com.i9media.utils;
 
 import com.i9media.models.ComissaoDTO;
+import com.i9media.models.ContaPagarDTO;
+import com.i9media.models.ContaReceberDTO;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
-import java.time.ZoneId;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+
+import java.awt.Color;
 
 public class PDFUtils {
 
-    public static byte[] gerarRelatorioComissoesPDF(List<ComissaoDTO> comissoes) throws Exception {
-        Document document = new Document(PageSize.A4);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PdfWriter.getInstance(document, baos);
+	private static Color laranjaForte = new Color(255, 102, 0);
+	private static Color laranjaClaro = new Color(255, 230, 204);
+	
+	public static byte[] gerarRelatorioContasAReceberPDF(List<ContaReceberDTO> contas, String criadoPor,
+	        LocalDate dataInicial, LocalDate dataFinal) throws Exception {
 
-        document.open();
 
-        Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD);
-        Paragraph titulo = new Paragraph("Relatório de Comissões", tituloFont);
-        titulo.setAlignment(Element.ALIGN_CENTER);
-        document.add(titulo);
-        document.add(Chunk.NEWLINE);
+	    Document document = new Document(PageSize.A4, 36, 36, 72, 36);
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    PdfWriter.getInstance(document, baos);
+	    document.open();
 
-        PdfPTable table = new PdfPTable(6); // 6 colunas
-        table.setWidthPercentage(100);
-        table.setWidths(new float[] {3, 3, 3, 2, 2, 2});
+	    // Logo
+	    try {
+	        InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
+	        if (logoStream != null) {
+	            Image logo = Image.getInstance(ImageIO.read(logoStream), null);
+	            logo.scaleToFit(100, 50);
+	            logo.setAlignment(Image.ALIGN_CENTER);
+	            document.add(logo);
+	        }
+	    } catch (Exception e) {
+	        System.err.println("Erro ao carregar logo: " + e.getMessage());
+	    }
 
-        addTableHeader(table);
+	    // Slogan
+	    Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
+	    Paragraph lema = new Paragraph("Always Half Full", lemaFont);
+	    lema.setAlignment(Element.ALIGN_CENTER);
+	    lema.setSpacingAfter(10);
+	    document.add(lema);
 
-        NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
+	    // Título
+	    Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
+	    Paragraph titulo = new Paragraph("Relatório de Contas a Receber", tituloFont);
+	    titulo.setAlignment(Element.ALIGN_CENTER);
+	    titulo.setSpacingAfter(10);
+	    document.add(titulo);
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	    // Rodapé com autor e data
+	    Font infoFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
+	    String dataHoraAtual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+	    Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, infoFont);
+	    rodape.setAlignment(Element.ALIGN_CENTER);
+	    rodape.setSpacingAfter(5);
+	    document.add(rodape);
 
-        for (ComissaoDTO c : comissoes) {
-            table.addCell(c.getExecutivo());
-            table.addCell(c.getCliente());
-            table.addCell(c.getAgencia());
-            table.addCell(currencyFormat.format(c.getValorLiquidoFinal()));
-            table.addCell(c.getPorcentagemGanho() + "%");
+	    // Período da busca
+	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	    String periodoTexto = "Período da busca: " + dataInicial.format(dtf) + " a " + dataFinal.format(dtf);
+	    Paragraph periodo = new Paragraph(periodoTexto, infoFont);
+	    periodo.setAlignment(Element.ALIGN_CENTER);
+	    periodo.setSpacingAfter(15);
+	    document.add(periodo);
 
-            LocalDate vencimento = c.getVencimento();
-            String dataFormatada = "";
-            if (vencimento != null) {
-                dataFormatada = vencimento.format(dtf);
-            }
-            table.addCell(dataFormatada);
-        }
+	    // Tabela de dados
+	    PdfPTable table = new PdfPTable(4);
+	    table.setWidthPercentage(100);
+	    table.setWidths(new float[]{4, 2, 3, 2});
 
-        document.add(table);
+	    Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD, Color.WHITE);
+	    Stream.of("Agencia", "Valor", "Data Vencimento", "Status").forEach(col -> {
+	        PdfPCell cell = new PdfPCell(new Phrase(col, headerFont));
+	        cell.setBackgroundColor(laranjaForte);
+	        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+	        cell.setPadding(6);
+	        table.addCell(cell);
+	    });
 
-        document.close();
+	    NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+	    currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
 
-        return baos.toByteArray();
-    }
+	    boolean linhaCor = false;
+	    for (ContaReceberDTO c : contas) {
+	        Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
+
+	        PdfPCell clienteCell = new PdfPCell(new Phrase(c.getCliente()));
+	        clienteCell.setBackgroundColor(bgColor);
+	        table.addCell(clienteCell);
+
+	        PdfPCell valorCell = new PdfPCell(new Phrase(currencyFormat.format(c.getValor())));
+	        valorCell.setBackgroundColor(bgColor);
+	        table.addCell(valorCell);
+
+	        PdfPCell dataCell = new PdfPCell(new Phrase(c.getDataVencimento().format(dtf)));
+	        dataCell.setBackgroundColor(bgColor);
+	        table.addCell(dataCell);
+
+	        PdfPCell statusCell = new PdfPCell(new Phrase(c.getStatus()));
+	        statusCell.setBackgroundColor(bgColor);
+	        table.addCell(statusCell);
+
+	        linhaCor = !linhaCor;
+	    }
+
+	    document.add(table);
+
+	    // Total geral
+	    BigDecimal total = contas.stream().map(ContaReceberDTO::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+	    Font totalFont = new Font(Font.HELVETICA, 12, Font.BOLD, laranjaForte);
+	    Paragraph totalParagrafo = new Paragraph("Total Geral: " + currencyFormat.format(total), totalFont);
+	    totalParagrafo.setAlignment(Element.ALIGN_RIGHT);
+	    totalParagrafo.setSpacingBefore(15);
+	    document.add(totalParagrafo);
+
+	    document.close();
+	    return baos.toByteArray();
+	}
+
+	public static byte[] gerarRelatorioContasAPagarPDF(List<ContaPagarDTO> contas, String criadoPor,
+	        LocalDate dataInicial, LocalDate dataFinal) throws Exception {
+
+	    Document document = new Document(PageSize.A4, 36, 36, 72, 36);
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    PdfWriter.getInstance(document, baos);
+	    document.open();
+
+	    // Logo
+	    try {
+	        InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
+	        if (logoStream != null) {
+	            Image logo = Image.getInstance(ImageIO.read(logoStream), null);
+	            logo.scaleToFit(100, 50);
+	            logo.setAlignment(Image.ALIGN_CENTER);
+	            document.add(logo);
+	        }
+	    } catch (Exception e) {
+	        System.err.println("Erro ao carregar logo: " + e.getMessage());
+	    }
+
+	    // Slogan
+	    Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
+	    Paragraph lema = new Paragraph("Always Half Full", lemaFont);
+	    lema.setAlignment(Element.ALIGN_CENTER);
+	    lema.setSpacingAfter(10);
+	    document.add(lema);
+
+	    // Título
+	    Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
+	    Paragraph titulo = new Paragraph("Relatório de Contas a Pagar", tituloFont);
+	    titulo.setAlignment(Element.ALIGN_CENTER);
+	    titulo.setSpacingAfter(10);
+	    document.add(titulo);
+
+	    // Rodapé com autor e data
+	    Font infoFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
+	    String dataHoraAtual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+	    Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, infoFont);
+	    rodape.setAlignment(Element.ALIGN_CENTER);
+	    rodape.setSpacingAfter(5);
+	    document.add(rodape);
+
+	    // Período da busca
+	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	    String periodoTexto = "Período da busca: " + dataInicial.format(dtf) + " a " + dataFinal.format(dtf);
+	    Paragraph periodo = new Paragraph(periodoTexto, infoFont);
+	    periodo.setAlignment(Element.ALIGN_CENTER);
+	    periodo.setSpacingAfter(15);
+	    document.add(periodo);
+
+	    // Tabela
+	    PdfPTable table = new PdfPTable(4);
+	    table.setWidthPercentage(100);
+	    table.setWidths(new float[]{4, 2, 3, 2});
+	    table.setSpacingBefore(10f);
+	    table.setSpacingAfter(10f);
+
+	    Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD, Color.WHITE);
+	    Stream.of("Veículo", "Valor", "Data Pagamento", "Status").forEach(col -> {
+	        PdfPCell cell = new PdfPCell(new Phrase(col, headerFont));
+	        cell.setBackgroundColor(laranjaForte);
+	        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+	        cell.setPadding(6);
+	        table.addCell(cell);
+	    });
+
+	    NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+	    currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
+
+	    boolean linhaCor = false;
+	    for (ContaPagarDTO c : contas) {
+	        Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
+
+	        table.addCell(criarCelula(c.getVeiculo(), bgColor));
+	        table.addCell(criarCelula(currencyFormat.format(c.getValor()), bgColor));
+	        table.addCell(criarCelula(c.getDataPagamento().format(dtf), bgColor));
+	        table.addCell(criarCelula(c.getStatus(), bgColor));
+
+	        linhaCor = !linhaCor;
+	    }
+
+	    document.add(table);
+
+	    // Total geral
+	    BigDecimal total = contas.stream()
+	        .map(ContaPagarDTO::getValor)
+	        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+	    Font totalFont = new Font(Font.HELVETICA, 12, Font.BOLD, laranjaForte);
+	    Paragraph totalParagrafo = new Paragraph("Total Geral: " + currencyFormat.format(total), totalFont);
+	    totalParagrafo.setAlignment(Element.ALIGN_RIGHT);
+	    totalParagrafo.setSpacingBefore(20f);
+	    document.add(totalParagrafo);
+
+	    document.close();
+	    return baos.toByteArray();
+	}
+
+	public static byte[] gerarRelatorioComissoesPDF(List<ComissaoDTO> comissoes, String criadoPor, boolean detalhado,
+			LocalDate periodoInicio, LocalDate periodoFim, String mesNome, Integer ano) throws Exception {
+
+		Document document = new Document(PageSize.A4, 36, 36, 72, 36);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PdfWriter.getInstance(document, baos);
+		document.open();
+
+		// Logo
+		try {
+			InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
+			if (logoStream != null) {
+				Image logo = Image.getInstance(ImageIO.read(logoStream), null);
+				logo.scaleToFit(100, 50);
+				logo.setAlignment(Image.ALIGN_CENTER);
+				document.add(logo);
+			} else {
+				System.err.println("Logo não encontrada no caminho /META-INF/resources/images/logo.png");
+			}
+		} catch (Exception e) {
+			System.err.println("Erro ao carregar a logo: " + e.getMessage());
+		}
+
+		// Slogan
+		Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
+		Paragraph lema = new Paragraph("Always Half Full", lemaFont);
+		lema.setAlignment(Element.ALIGN_CENTER);
+		lema.setSpacingAfter(10);
+		document.add(lema);
+
+		// Título
+		Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
+		Paragraph titulo = new Paragraph("Relatório de Comissões", tituloFont);
+		titulo.setAlignment(Element.ALIGN_CENTER);
+		titulo.setSpacingBefore(10);
+		titulo.setSpacingAfter(10);
+		document.add(titulo);
+
+		// Rodapé (autor e data)
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+		String dataHoraAtual = LocalDateTime.now().format(formatter);
+		Font rodapeFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
+
+		// Linha 1: criado por + data/hora
+		Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, rodapeFont);
+		rodape.setAlignment(Element.ALIGN_CENTER);
+		rodape.setSpacingAfter(5);
+		document.add(rodape);
+
+		// Linha 2: filtro aplicado
+		String filtroTexto;
+		if (periodoInicio != null && periodoFim != null) {
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+			filtroTexto = "Período da busca: " + periodoInicio.format(dtf) + " a " + periodoFim.format(dtf);
+		} else {
+			// Exemplo: "Mês da busca: Julho / 2025"
+			filtroTexto = "Mês da busca: " + mesNome + " / " + ano;
+		}
+
+		Paragraph filtroParagrafo = new Paragraph(filtroTexto, rodapeFont);
+		filtroParagrafo.setAlignment(Element.ALIGN_CENTER);
+		filtroParagrafo.setSpacingAfter(20);
+		document.add(filtroParagrafo);
+
+		NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+		currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
+
+		if (detalhado) {
+			// DETALHADO
+			PdfPTable table = new PdfPTable(6);
+			table.setWidthPercentage(100);
+			table.setWidths(new float[] { 3, 3, 3, 2, 2, 2 });
+			table.setSpacingBefore(10f);
+			table.setSpacingAfter(10f);
+			addTableHeader(table);
+
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+			boolean linhaCor = false;
+
+			for (ComissaoDTO c : comissoes) {
+				Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
+
+				table.addCell(criarCelula(c.getExecutivo(), bgColor));
+				table.addCell(criarCelula(c.getCliente(), bgColor));
+				table.addCell(criarCelula(c.getAgencia(), bgColor));
+				table.addCell(criarCelula(currencyFormat.format(c.getValorLiquidoFinal()), bgColor));
+				table.addCell(criarCelula(currencyFormat.format(c.getComissaoCalculada()), bgColor));
+
+				String dataFormatada = c.getVencimento() != null ? c.getVencimento().format(dtf) : "";
+				table.addCell(criarCelula(dataFormatada, bgColor));
+
+				linhaCor = !linhaCor;
+			}
+
+			document.add(table);
+		} else {
+			// RESUMIDO
+			Map<String, List<ComissaoDTO>> agrupadoPorExecutivo = comissoes.stream()
+					.collect(Collectors.groupingBy(ComissaoDTO::getExecutivo));
+
+			PdfPTable table = new PdfPTable(3);
+			table.setWidthPercentage(100);
+			table.setWidths(new float[] { 4, 2, 3 });
+
+			Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD, Color.WHITE);
+			Stream.of("Executivo", "Total de PIs", "Comissão").forEach(tituloColuna -> {
+				PdfPCell cell = new PdfPCell(new Phrase(tituloColuna, headerFont));
+				cell.setBackgroundColor(laranjaForte);
+				cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+				cell.setPadding(8);
+				table.addCell(cell);
+			});
+
+			for (Map.Entry<String, List<ComissaoDTO>> entry : agrupadoPorExecutivo.entrySet()) {
+				String executivo = entry.getKey();
+				List<ComissaoDTO> lista = entry.getValue();
+
+				BigDecimal totalComissao = lista.stream().map(ComissaoDTO::getComissaoCalculada).reduce(BigDecimal.ZERO,
+						BigDecimal::add);
+
+				table.addCell(criarCelula(executivo, Color.WHITE));
+				table.addCell(criarCelula(String.valueOf(lista.size()), Color.WHITE));
+				table.addCell(criarCelula(currencyFormat.format(totalComissao), Color.WHITE));
+
+			}
+			document.add(table);
+		}
+
+		BigDecimal totalComissaoGeral = comissoes.stream()
+				.map(dto -> dto.getComissaoCalculada() != null ? dto.getComissaoCalculada() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		Font totalFont = new Font(Font.HELVETICA, 12, Font.BOLD, laranjaForte);
+		Paragraph totalParagrafo = new Paragraph(
+				"Total Geral da Comissão: " + currencyFormat.format(totalComissaoGeral), totalFont);
+		totalParagrafo.setAlignment(Element.ALIGN_RIGHT);
+		totalParagrafo.setSpacingBefore(20f);
+		document.add(totalParagrafo);
+
+		document.close();
+		return baos.toByteArray();
+	}
 
     private static void addTableHeader(PdfPTable table) {
-        Stream.of("Executivo", "Cliente", "Agência", "Valor Líquido", "% Ganho", "Vencimento")
-                .forEach(columnTitle -> {
-                    PdfPCell header = new PdfPCell();
-                    header.setBorderWidth(1);
-                    header.setPhrase(new Phrase(columnTitle));
-                    table.addCell(header);
-                });
+        Color laranjaForte = new Color(255, 102, 0);
+        Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD, Color.WHITE);
+
+        String[] headers = {"Executivo", "Cliente", "Agência", "Valor Líquido", "Comissão", "Vencimento"};
+        for (String coluna : headers) {
+            PdfPCell header = new PdfPCell(new Phrase(coluna, headerFont));
+            header.setBackgroundColor(laranjaForte);
+            header.setHorizontalAlignment(Element.ALIGN_CENTER);
+            header.setPadding(8);
+            table.addCell(header);
+        }
+    }
+
+    private static PdfPCell criarCelula(String texto, Color background) {
+        Font font = new Font(Font.HELVETICA, 11, Font.NORMAL, Color.BLACK);
+        PdfPCell cell = new PdfPCell(new Phrase(texto, font));
+        cell.setBackgroundColor(background);
+        cell.setPadding(6);
+        return cell;
     }
 }

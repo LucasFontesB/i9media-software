@@ -201,43 +201,44 @@ public class CriarUsuarioDialog extends Dialog {
         boolean sucessoUser = Usuario.salvarUsuario(novoUsuario);
 
         if (sucessoUser) {
-            String nomeBase = usuarioField.getValue();
-            Path pastaDestino = Paths.get("src/main/resources/META-INF/resources/images/usuarios");
+            if (buffer != null) {  // Só tenta salvar a imagem se houver buffer
+                String nomeBase = usuarioField.getValue();
+                Path pastaDestino = Paths.get("src/main/resources/META-INF/resources/images/usuarios");
 
-            try {
-                if (Files.notExists(pastaDestino)) {
-                    Files.createDirectories(pastaDestino);
-                }
-
-                String nomeOriginal = buffer.getFileName().toLowerCase();
-
-                Path caminhoDestino = pastaDestino.resolve(nomeBase + ".png");
-
-                try (InputStream input = buffer.getInputStream()) {
-                    if (nomeOriginal.endsWith(".jpg") || nomeOriginal.endsWith(".jpeg")) {
-                        BufferedImage imagem = ImageIO.read(input);
-                        if (imagem != null) {
-                            ImageIO.write(imagem, "png", caminhoDestino.toFile());
-                        } else {
-                            throw new IOException("Não foi possível ler imagem JPG.");
-                        }
-                    } else if (nomeOriginal.endsWith(".png")) {
-                        Files.copy(input, caminhoDestino, StandardCopyOption.REPLACE_EXISTING);
-                    } else {
-                        Notification.show("Formato de imagem não suportado.", 3000, Notification.Position.MIDDLE);
-                        return;
+                try {
+                    if (Files.notExists(pastaDestino)) {
+                        Files.createDirectories(pastaDestino);
                     }
+
+                    String nomeOriginal = buffer.getFileName().toLowerCase();
+
+                    Path caminhoDestino = pastaDestino.resolve(nomeBase + ".png");
+
+                    try (InputStream input = buffer.getInputStream()) {
+                        if (nomeOriginal.endsWith(".jpg") || nomeOriginal.endsWith(".jpeg")) {
+                            BufferedImage imagem = ImageIO.read(input);
+                            if (imagem != null) {
+                                ImageIO.write(imagem, "png", caminhoDestino.toFile());
+                            } else {
+                                throw new IOException("Não foi possível ler imagem JPG.");
+                            }
+                        } else if (nomeOriginal.endsWith(".png")) {
+                            Files.copy(input, caminhoDestino, StandardCopyOption.REPLACE_EXISTING);
+                        } else {
+                            Notification.show("Formato de imagem não suportado.", 3000, Notification.Position.MIDDLE);
+                            return;
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Notification.show("Usuário salvo, mas houve erro ao salvar a imagem.", 3000, Notification.Position.MIDDLE);
                 }
-
-                Notification.show("Usuário criado com sucesso!", 2000, Notification.Position.MIDDLE);
-                this.close();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Notification.show("Usuário salvo, mas houve erro ao salvar a imagem.", 3000, Notification.Position.MIDDLE);
             }
+            
+            Notification.show("Usuário criado com sucesso!", 2000, Notification.Position.MIDDLE);
+            this.close();
+
         } else {
             Notification.show("Erro ao salvar usuário.", 2000, Notification.Position.MIDDLE);
         }
-    }
-}
+}}
