@@ -4,12 +4,17 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -22,6 +27,7 @@ import com.i9media.utils.DateUtils;
 
 
 public class ContasReceberDialog extends Dialog {
+
     public ContasReceberDialog() {
         setWidth("900px");
         setHeight("700px");
@@ -38,30 +44,110 @@ public class ContasReceberDialog extends Dialog {
         grid.setMinHeight("500px");
         grid.setHeight("auto");
 
-        grid.addColumn(pi -> {
+        LocalDate hoje = LocalDate.now();
+
+        // Cliente com estilização
+        grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
+            String nomeCliente = "";
             try {
                 Cliente cliente = Cliente.buscarPorId(pi.getClienteId());
-                return cliente != null ? cliente.getNome() : "";
+                nomeCliente = cliente != null ? cliente.getNome() : "";
             } catch (Exception e) {
-                return "";
+                nomeCliente = "";
             }
-        }).setHeader("Cliente").setAutoWidth(true);
 
-        grid.addColumn(pi -> {
+            Span span = new Span(nomeCliente);
+
+            Date vencimento = pi.getVencimentopiAgencia();
+            if (vencimento != null) {
+                LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("vencido");
+                } else if (Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("linha-paga");
+                }
+            }
+
+            return span;
+        })).setHeader("Cliente").setAutoWidth(true);
+
+        // Agência com estilização
+        grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
+            String nomeAgencia = "";
             try {
                 Agencia ag = Agencia.buscarPorId(pi.getAgenciaId());
-                return ag != null ? ag.getNome() : "";
+                nomeAgencia = ag != null ? ag.getNome() : "";
             } catch (Exception e) {
-                return "";
+                nomeAgencia = "";
             }
-        }).setHeader("Agência").setAutoWidth(true);
 
-        grid.addColumn(pi -> formatarMoeda(pi.getValorLiquido()))
-            .setHeader("Valor").setAutoWidth(true);
+            Span span = new Span(nomeAgencia);
 
-        grid.addColumn(pi -> DateUtils.formatarDataParaBrasileiro(pi.getVencimentopiAgencia()))
-            .setHeader("Data").setAutoWidth(true);
+            Date vencimento = pi.getVencimentopiAgencia();
+            if (vencimento != null) {
+                LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("vencido");
+                } else if (Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("linha-paga");
+                }
+            }
 
+            return span;
+        })).setHeader("Agência").setAutoWidth(true);
+
+        // Valor com estilização
+        grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
+            Span span = new Span(formatarMoeda(pi.getValorLiquido()));
+            Date vencimento = pi.getVencimentopiAgencia();
+            if (vencimento != null) {
+                LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("vencido");
+                } else if (Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("linha-paga");
+                }
+            }
+            return span;
+        })).setHeader("Valor").setAutoWidth(true);
+
+        // Data com estilização
+        grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
+            Date vencimento = pi.getVencimentopiAgencia();
+            if (vencimento != null) {
+                LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
+                Span span = new Span(DateUtils.formatarDataParaBrasileiro(vencimento));
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("vencido");
+                } else if (Boolean.TRUE.equals(pi.getPagoPelaAgencia())) {
+                    span.addClassName("linha-paga");
+                }
+                return span;
+            } else {
+                return new Span("");
+            }
+        })).setHeader("Data").setAutoWidth(true);
+
+        // Estiliza a linha inteira conforme status
+        grid.setClassNameGenerator(pi -> {
+            Date vencimento = pi.getVencimentopiAgencia();
+            boolean pago = Boolean.TRUE.equals(pi.getPagoPelaAgencia());
+
+            if (pago) {
+                return "linha-paga"; // verde
+            }
+
+            if (vencimento != null) {
+                LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
+                if (data.isBefore(hoje)) {
+                    return "linha-vencida"; // vermelho
+                }
+            }
+
+            return null;
+        });
+
+        // Busca os dados
         try {
             List<PedidoInsercao> receber = DashboardService.buscarAReceberMesAtual();
             grid.setItems(receber);
@@ -69,7 +155,7 @@ public class ContasReceberDialog extends Dialog {
             e.printStackTrace();
         }
 
-        // 🔄 Novo: abrir PIView ao dar dois cliques
+        // Abrir PI ao dar dois cliques
         grid.addItemDoubleClickListener(event -> {
             PedidoInsercao pi = event.getItem();
             try {

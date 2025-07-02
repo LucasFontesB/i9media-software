@@ -150,7 +150,7 @@ public class DashboardFinanceiroView extends Dashboard {
             }
         });
 
-        listasLayout.add(containerPagar, containerReceber);
+        listasLayout.add(containerReceber, containerPagar);
         layout.add(listasLayout);
 
         // Atualiza dados iniciais
@@ -179,7 +179,7 @@ public class DashboardFinanceiroView extends Dashboard {
 
         LocalDate hoje = LocalDate.now();
 
-        // Cliente com estilização "vencido" se a data da linha já passou
+        // Cliente com estilização:
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeCliente = "";
             try {
@@ -191,9 +191,13 @@ public class DashboardFinanceiroView extends Dashboard {
 
             Span span = new Span(nomeCliente);
 
-            // Verifica a data da linha conforme isPagar
             Date dataLinha = isPagar ? pi.getDataPagamentoParaVeiculo() : pi.getVencimentopiAgencia();
-            if (dataLinha != null) {
+            boolean pago = isPagar ? Boolean.TRUE.equals(pi.getPagoParaVeiculo()) : Boolean.TRUE.equals(pi.getPagoPelaAgencia());
+
+            if (pago) {
+                span.getStyle().set("color", "green");
+                span.getStyle().set("font-weight", "bold");
+            } else if (dataLinha != null) {
                 LocalDate data = ((java.sql.Date) dataLinha).toLocalDate();
                 if (data.isBefore(hoje)) {
                     span.addClassName("vencido");
@@ -203,7 +207,7 @@ public class DashboardFinanceiroView extends Dashboard {
             return span;
         })).setHeader("Cliente").setAutoWidth(true);
 
-        // Agência com estilização "vencido"
+        // Agência com mesma lógica
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeAgencia = "";
             try {
@@ -215,9 +219,13 @@ public class DashboardFinanceiroView extends Dashboard {
 
             Span span = new Span(nomeAgencia);
 
-            // Mesma verificação da data da linha
             Date dataLinha = isPagar ? pi.getDataPagamentoParaVeiculo() : pi.getVencimentopiAgencia();
-            if (dataLinha != null) {
+            boolean pago = isPagar ? Boolean.TRUE.equals(pi.getPagoParaVeiculo()) : Boolean.TRUE.equals(pi.getPagoPelaAgencia());
+
+            if (pago) {
+                span.getStyle().set("color", "green");
+                span.getStyle().set("font-weight", "bold");
+            } else if (dataLinha != null) {
                 LocalDate data = ((java.sql.Date) dataLinha).toLocalDate();
                 if (data.isBefore(hoje)) {
                     span.addClassName("vencido");
@@ -228,11 +236,15 @@ public class DashboardFinanceiroView extends Dashboard {
         })).setHeader("Agência").setAutoWidth(true);
 
         if (isPagar) {
-            // Valor com estilização vencido
             grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
                 Span span = new Span(formatarMoeda(pi.getRepasseVeiculo()));
                 Date dataPagamento = pi.getDataPagamentoParaVeiculo();
-                if (dataPagamento != null) {
+                boolean pago = Boolean.TRUE.equals(pi.getPagoParaVeiculo());
+
+                if (pago) {
+                    span.getStyle().set("color", "green");
+                    span.getStyle().set("font-weight", "bold");
+                } else if (dataPagamento != null) {
                     LocalDate data = ((java.sql.Date) dataPagamento).toLocalDate();
                     if (data.isBefore(hoje)) {
                         span.addClassName("vencido");
@@ -241,13 +253,17 @@ public class DashboardFinanceiroView extends Dashboard {
                 return span;
             })).setHeader("Valor").setAutoWidth(true);
 
-            // Data com estilização vencido
             grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
                 Date dataPagamento = pi.getDataPagamentoParaVeiculo();
+                boolean pago = Boolean.TRUE.equals(pi.getPagoParaVeiculo());
+
                 if (dataPagamento != null) {
                     LocalDate data = ((java.sql.Date) dataPagamento).toLocalDate();
                     Span span = new Span(DateUtils.formatarDataParaBrasileiro(dataPagamento));
-                    if (data.isBefore(hoje)) {
+                    if (pago) {
+                        span.getStyle().set("color", "green");
+                        span.getStyle().set("font-weight", "bold");
+                    } else if (data.isBefore(hoje)) {
                         span.addClassName("vencido");
                     }
                     return span;
@@ -257,11 +273,15 @@ public class DashboardFinanceiroView extends Dashboard {
             })).setHeader("Data").setAutoWidth(true);
 
         } else {
-            // Valor com estilização vencido
             grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
                 Span span = new Span(formatarMoeda(pi.getValorLiquido()));
                 Date vencimento = pi.getVencimentopiAgencia();
-                if (vencimento != null) {
+                boolean pago = Boolean.TRUE.equals(pi.getPagoPelaAgencia());
+
+                if (pago) {
+                    span.getStyle().set("color", "green");
+                    span.getStyle().set("font-weight", "bold");
+                } else if (vencimento != null) {
                     LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
                     if (data.isBefore(hoje)) {
                         span.addClassName("vencido");
@@ -270,13 +290,17 @@ public class DashboardFinanceiroView extends Dashboard {
                 return span;
             })).setHeader("Valor").setAutoWidth(true);
 
-            // Data com estilização vencido
             grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
                 Date vencimento = pi.getVencimentopiAgencia();
+                boolean pago = Boolean.TRUE.equals(pi.getPagoPelaAgencia());
+
                 if (vencimento != null) {
                     LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
                     Span span = new Span(DateUtils.formatarDataParaBrasileiro(vencimento));
-                    if (data.isBefore(hoje)) {
+                    if (pago) {
+                        span.getStyle().set("color", "green");
+                        span.getStyle().set("font-weight", "bold");
+                    } else if (data.isBefore(hoje)) {
                         span.addClassName("vencido");
                     }
                     return span;

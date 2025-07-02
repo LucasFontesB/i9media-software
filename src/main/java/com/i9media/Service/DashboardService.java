@@ -16,12 +16,70 @@ import java.util.Map;
 
 public class DashboardService {
 	
+	public static double obterContasReceberMesAtual() throws SQLException {
+	    double total = 0.0;
+
+	    String sql = "SELECT valorliquido FROM pi WHERE " +
+	                 "(" +
+	                   "vencimentopiagencia >= date_trunc('month', CURRENT_DATE) AND " +
+	                   "vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')" +
+	                 ") " +
+	                 "OR " +
+	                 "(" +
+	                   "(pago_pela_agencia = false OR pago_pela_agencia IS NULL) AND " +
+	                   "vencimentopiagencia < date_trunc('month', CURRENT_DATE)" +
+	                 ")";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        while (rs.next()) {
+	            total += rs.getDouble("valorliquido");
+	        }
+	    }
+
+	    return total;
+	}
+
+	public static double obterContasPagarMesAtual() throws SQLException {
+	    double total = 0.0;
+
+	    String sql = "SELECT repasseveiculo FROM pi WHERE " +
+	                 "(" +
+	                   "datapagamentoparaveiculo >= date_trunc('month', CURRENT_DATE) AND " +
+	                   "datapagamentoparaveiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')" +
+	                 ") " +
+	                 "OR " +
+	                 "(" +
+	                   "(pago_para_veiculo = false OR pago_para_veiculo IS NULL) AND " +
+	                   "datapagamentoparaveiculo < date_trunc('month', CURRENT_DATE)" +
+	                 ")";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql);
+	         ResultSet rs = stmt.executeQuery()) {
+	        while (rs.next()) {
+	            total += rs.getDouble("repasseveiculo");
+	        }
+	    }
+
+	    return total;
+	}
+
 	public static List<PedidoInsercao> buscarAPagarMesAtual() throws SQLException {
 	    List<PedidoInsercao> pedidos = new ArrayList<>();
 
-	    String sql = "SELECT * FROM pi WHERE dataPagamentoParaVeiculo >= date_trunc('month', CURRENT_DATE) " +
-	                 "AND dataPagamentoParaVeiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month') " +
-	                 "ORDER BY dataPagamentoParaVeiculo ASC";
+	    String sql = "SELECT * FROM pi WHERE " +
+	                 "(" +
+	                   "datapagamentoparaveiculo >= date_trunc('month', CURRENT_DATE) AND " +
+	                   "datapagamentoparaveiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')" +
+	                 ") " +
+	                 "OR " +
+	                 "(" +
+	                   "(pago_para_veiculo = false OR pago_para_veiculo IS NULL) AND " +
+	                   "datapagamentoparaveiculo < date_trunc('month', CURRENT_DATE)" +
+	                 ") " +
+	                 "ORDER BY datapagamentoparaveiculo ASC";
 
 	    try (Connection conn = Conectar.getConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -37,8 +95,16 @@ public class DashboardService {
 	public static List<PedidoInsercao> buscarAReceberMesAtual() throws SQLException {
 	    List<PedidoInsercao> pedidos = new ArrayList<>();
 
-	    String sql = "SELECT * FROM pi WHERE vencimentopiagencia >= date_trunc('month', CURRENT_DATE) " +
-	                 "AND vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month') " +
+	    String sql = "SELECT * FROM pi WHERE " +
+	                 "(" +
+	                   "vencimentopiagencia >= date_trunc('month', CURRENT_DATE) AND " +
+	                   "vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')" +
+	                 ") " +
+	                 "OR " +
+	                 "(" +
+	                   "(pago_pela_agencia = false OR pago_pela_agencia IS NULL) AND " +
+	                   "vencimentopiagencia < date_trunc('month', CURRENT_DATE)" +
+	                 ") " +
 	                 "ORDER BY vencimentopiagencia ASC";
 
 	    try (Connection conn = Conectar.getConnection();
@@ -50,41 +116,6 @@ public class DashboardService {
 	    }
 
 	    return pedidos;
-	}
-	
-	public static double obterContasReceberMesAtual() throws SQLException {
-	    String sql = "SELECT COALESCE(SUM(valorliquido), 0) FROM pi " +
-	                 "WHERE vencimentopiagencia >= date_trunc('month', CURRENT_DATE) " +
-	                 "AND vencimentopiagencia < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')";
-
-	    try (Connection conn = Conectar.getConnection();
-	         PreparedStatement stmt = conn.prepareStatement(sql);
-	         ResultSet rs = stmt.executeQuery()) {
-	        if (rs.next()) {
-	            return rs.getDouble(1);
-	        }
-	    }
-	    return 0.0;
-	}
-	
-	public static double obterContasPagarMesAtual() throws SQLException {
-	    String sql = "SELECT COALESCE(SUM(repasseVeiculo), 0) AS total_pagar " +
-	                 "FROM pi " +
-	                 "WHERE dataPagamentoParaVeiculo >= date_trunc('month', CURRENT_DATE) " +
-	                 "AND dataPagamentoParaVeiculo < date_trunc('month', CURRENT_DATE + INTERVAL '1 month')";
-
-	    double totalPagar = 0.0;
-
-	    try (Connection conn = Conectar.getConnection();
-	         PreparedStatement stmt = conn.prepareStatement(sql);
-	         ResultSet rs = stmt.executeQuery()) {
-	        
-	        if (rs.next()) {
-	            totalPagar = rs.getDouble("total_pagar");
-	        }
-	    }
-
-	    return totalPagar;
 	}
 	
 	public static double obterSaldoProjetadoMesAtual() throws SQLException {

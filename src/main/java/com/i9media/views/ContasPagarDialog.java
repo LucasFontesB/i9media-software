@@ -58,8 +58,10 @@ public class ContasPagarDialog extends Dialog {
             Date dataLinha = pi.getDataPagamentoParaVeiculo();
             if (dataLinha != null) {
                 LocalDate data = ((java.sql.Date) dataLinha).toLocalDate();
-                if (data.isBefore(hoje)) {
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
                     span.addClassName("vencido");
+                }else if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
+                	span.addClassName("linha-paga");
                 }
             }
 
@@ -81,8 +83,10 @@ public class ContasPagarDialog extends Dialog {
             Date dataLinha = pi.getDataPagamentoParaVeiculo();
             if (dataLinha != null) {
                 LocalDate data = ((java.sql.Date) dataLinha).toLocalDate();
-                if (data.isBefore(hoje)) {
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
                     span.addClassName("vencido");
+                }else if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
+                	span.addClassName("linha-paga");
                 }
             }
 
@@ -95,8 +99,10 @@ public class ContasPagarDialog extends Dialog {
             Date dataPagamento = pi.getDataPagamentoParaVeiculo();
             if (dataPagamento != null) {
                 LocalDate data = ((java.sql.Date) dataPagamento).toLocalDate();
-                if (data.isBefore(hoje)) {
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
                     span.addClassName("vencido");
+                }else if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
+                	span.addClassName("linha-paga");
                 }
             }
             return span;
@@ -108,8 +114,10 @@ public class ContasPagarDialog extends Dialog {
             if (dataPagamento != null) {
                 LocalDate data = ((java.sql.Date) dataPagamento).toLocalDate();
                 Span span = new Span(DateUtils.formatarDataParaBrasileiro(dataPagamento));
-                if (data.isBefore(hoje)) {
+                if (data.isBefore(hoje) && !Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
                     span.addClassName("vencido");
+                }else if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
+                	span.addClassName("linha-paga");
                 }
                 return span;
             } else {
@@ -124,7 +132,7 @@ public class ContasPagarDialog extends Dialog {
 
             // Estiliza a linha inteira conforme status
             grid.setClassNameGenerator(pi -> {
-                if (pi.getPagoParaVeiculo()) {
+                if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
                     return "linha-paga"; // verde
                 }
                 Date dataPagamento = pi.getDataPagamentoParaVeiculo();

@@ -15,12 +15,14 @@
   font-weight: bold;
 }
 
-.linha-paga {
-    background-color: #d4edda !important;
+.linha-vencida {
+    background-color: #ffe6e6 !important;
+	font-weight: bold;
 }
 
-.linha-vencida {
-    background-color: #f8d7da !important; 
+.linha-paga {
+    background-color: #e6ffe6 !important;
+	font-weight: bold;
 }
 
 .loginButton{

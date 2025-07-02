@@ -115,7 +115,7 @@ public class PIDTO {
             stmt.setDate(2, this.dataConfirmadaPagamentoPelaAgencia != null ? new java.sql.Date(this.dataConfirmadaPagamentoPelaAgencia.getTime()) : null);
 
             stmt.setBoolean(3, this.pagoParaVeiculo != null ? this.pagoParaVeiculo : false);
-            stmt.setDate(4, this.dataConfirmadaPagamentoParaVeiculo != null ? new java.sql.Date(this.dataPagamentoParaVeiculo.getTime()) : null);
+            stmt.setDate(4, this.dataConfirmadaPagamentoParaVeiculo != null ? new java.sql.Date(this.dataConfirmadaPagamentoParaVeiculo.getTime()) : null);
             stmt.setString(5, this.responsavelPagamentoVeiculo);
             stmt.setString(6, this.responsavelPagamentoAgencia);
             

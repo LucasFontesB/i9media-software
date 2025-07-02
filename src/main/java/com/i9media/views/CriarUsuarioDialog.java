@@ -201,7 +201,7 @@ public class CriarUsuarioDialog extends Dialog {
         boolean sucessoUser = Usuario.salvarUsuario(novoUsuario);
 
         if (sucessoUser) {
-            if (buffer != null) {  // Só tenta salvar a imagem se houver buffer
+            if (buffer != null && buffer.getFileName() != null && !buffer.getFileName().isBlank()) {
                 String nomeBase = usuarioField.getValue();
                 Path pastaDestino = Paths.get("src/main/resources/META-INF/resources/images/usuarios");
 
@@ -234,11 +234,11 @@ public class CriarUsuarioDialog extends Dialog {
                     Notification.show("Usuário salvo, mas houve erro ao salvar a imagem.", 3000, Notification.Position.MIDDLE);
                 }
             }
-            
+
             Notification.show("Usuário criado com sucesso!", 2000, Notification.Position.MIDDLE);
             this.close();
-
         } else {
             Notification.show("Erro ao salvar usuário.", 2000, Notification.Position.MIDDLE);
         }
-}}
+    }
+}

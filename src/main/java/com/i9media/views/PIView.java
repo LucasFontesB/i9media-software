@@ -508,10 +508,11 @@ public class PIView extends Dialog {
         	    DatePicker dataPagamentoPelaAgenciaPicker = new DatePicker("Data de Pagamento pela Agência");
         	    DatePicker dataPagamentoAoVeiculoPicker = new DatePicker("Data de Pagamento ao Veículo");
 
-        	    // Inicializar checkboxes com valores existentes
+        	    // Inicializar checkboxes com valores existentes da PI
         	    pagoPelaAgenciaCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoPelaAgencia()));
         	    pagoAoVeiculoCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoParaVeiculo()));
 
+        	    // Inicializar campos de data com valores existentes
         	    if (pi.getDataConfirmadaPagamentoPelaAgencia() != null) {
         	        java.sql.Date sqlDate = new java.sql.Date(pi.getDataConfirmadaPagamentoPelaAgencia().getTime());
         	        dataPagamentoPelaAgenciaPicker.setValue(sqlDate.toLocalDate());
@@ -524,7 +525,10 @@ public class PIView extends Dialog {
 
         	    Button confirmarButton = new Button("Confirmar Pagamento", e -> {
         	        try {
-        	            pi.setPagoPelaAgencia(pagoPelaAgenciaCheckbox.getValue());
+        	            // --- PAGAMENTO PELA AGÊNCIA ---
+        	            Boolean novoPagoAgencia = pagoPelaAgenciaCheckbox.getValue();
+        	            Boolean atualPagoAgencia = pi.getPagoPelaAgencia();
+        	            pi.setPagoPelaAgencia(novoPagoAgencia);
 
         	            LocalDate localDateAgencia = dataPagamentoPelaAgenciaPicker.getValue();
         	            if (localDateAgencia != null) {
@@ -534,11 +538,14 @@ public class PIView extends Dialog {
         	                pi.setDataConfirmadaPagamentoPelaAgencia(null);
         	            }
 
-        	            if (pagoPelaAgenciaCheckbox.getValue()) {
+        	            if (!Boolean.TRUE.equals(atualPagoAgencia) && Boolean.TRUE.equals(novoPagoAgencia)) {
         	                pi.setResponsavelPagamentoAgencia(usuarioLogado.getNome());
         	            }
 
-        	            pi.setPagoParaVeiculo(pagoAoVeiculoCheckbox.getValue());
+        	            // --- PAGAMENTO AO VEÍCULO ---
+        	            Boolean novoPagoVeiculo = pagoAoVeiculoCheckbox.getValue();
+        	            Boolean atualPagoVeiculo = pi.getPagoParaVeiculo();
+        	            pi.setPagoParaVeiculo(novoPagoVeiculo);
 
         	            LocalDate localDateVeiculo = dataPagamentoAoVeiculoPicker.getValue();
         	            if (localDateVeiculo != null) {
@@ -548,10 +555,11 @@ public class PIView extends Dialog {
         	                pi.setdataConfirmadaPagamentoParaVeiculo(null);
         	            }
 
-        	            if (pagoAoVeiculoCheckbox.getValue()) {
+        	            if (!Boolean.TRUE.equals(atualPagoVeiculo) && Boolean.TRUE.equals(novoPagoVeiculo)) {
         	                pi.setResponsavelPagamentoVeiculo(usuarioLogado.getNome());
         	            }
-        	            
+
+        	            // Atualização e notificação
         	            PIUpdateBroadcaster.broadcast();
         	            pi.atualizarPagamentoFinanceiro();
 
@@ -562,6 +570,7 @@ public class PIView extends Dialog {
         	        }
         	    });
 
+        	    // Montagem do layout
         	    FormLayout financeiroForm = new FormLayout();
         	    financeiroForm.add(
         	        pagoPelaAgenciaCheckbox, dataPagamentoPelaAgenciaPicker,
