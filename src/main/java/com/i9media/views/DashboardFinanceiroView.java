@@ -58,12 +58,10 @@ public class DashboardFinanceiroView extends Dashboard {
         layout.setSpacing(true);
         layout.setAlignItems(Alignment.CENTER);
 
-        // Cabeçalho
         H2 titulo = new H2("Dashboard Financeira");
         titulo.getStyle().set("margin-bottom", "24px");
         layout.add(titulo);
 
-        // Cards horizontais
         HorizontalLayout cardsLayout = new HorizontalLayout();
         cardsLayout.setWidthFull();
         cardsLayout.setSpacing(true);
@@ -73,20 +71,17 @@ public class DashboardFinanceiroView extends Dashboard {
         
         cardsLayout.getStyle().set("margin-bottom", "50px");
 
-        // Inicializa cards com valores temporários (serão atualizados depois)
         cardTotalPIs = CriarCard.Criar("Total de PIs (Mês Atual)", "0");
         cardReceber = CriarCard.Criar("Contas a Receber", "R$ 0,00");
         cardPagar = CriarCard.Criar("Contas a Pagar", "R$ 0,00");
         cardSaldoProjetado = CriarCard.Criar("Saldo Projetado", "R$ 0,00");
 
-        // Configura clique para abrir dialog
         configurarClickCard(cardReceber.layout, () -> new ContasReceberDialog().open());
         configurarClickCard(cardPagar.layout, () -> new ContasPagarDialog().open());
 
         cardsLayout.add(cardTotalPIs.layout, cardReceber.layout, cardPagar.layout, cardSaldoProjetado.layout);
         layout.add(cardsLayout);
 
-        // Grids lado a lado
         HorizontalLayout listasLayout = new HorizontalLayout();
         listasLayout.setWidthFull();
         listasLayout.setSpacing(true);
@@ -94,7 +89,6 @@ public class DashboardFinanceiroView extends Dashboard {
         listasLayout.setDefaultVerticalComponentAlignment(Alignment.START);
         listasLayout.setJustifyContentMode(JustifyContentMode.CENTER);
 
-        // Container A Pagar
         VerticalLayout containerPagar = new VerticalLayout();
         containerPagar.setWidth("45%");
         containerPagar.setPadding(false);
@@ -110,7 +104,6 @@ public class DashboardFinanceiroView extends Dashboard {
         configurarGrid(gridPagar, true);
         containerPagar.add(gridPagar);
 
-        // Container A Receber
         VerticalLayout containerReceber = new VerticalLayout();
         containerReceber.setWidth("45%");
         containerReceber.setPadding(false);
@@ -153,7 +146,6 @@ public class DashboardFinanceiroView extends Dashboard {
         listasLayout.add(containerReceber, containerPagar);
         layout.add(listasLayout);
 
-        // Atualiza dados iniciais
         atualizarTudo();
 
         return layout;
@@ -179,7 +171,6 @@ public class DashboardFinanceiroView extends Dashboard {
 
         LocalDate hoje = LocalDate.now();
 
-        // Cliente com estilização:
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeCliente = "";
             try {
@@ -207,7 +198,6 @@ public class DashboardFinanceiroView extends Dashboard {
             return span;
         })).setHeader("Cliente").setAutoWidth(true);
 
-        // Agência com mesma lógica
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeAgencia = "";
             try {

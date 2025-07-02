@@ -23,11 +23,9 @@ public class ComissaoDTO implements Serializable {
     private BigDecimal comissaoCalculada;
     private LocalDate vencimento;
 
-    // Construtor vazio
     public ComissaoDTO() {
     }
 
-    // Construtor que popula a partir do ResultSet
     public ComissaoDTO(ResultSet rs) throws SQLException {
         this.executivo = rs.getString("executivo_nome");
         this.cliente = rs.getString("cliente_nome");
@@ -176,7 +174,6 @@ public class ComissaoDTO implements Serializable {
         }
     }
 
-    // Getters e Setters
     public String getExecutivo() {
         return executivo;
     }

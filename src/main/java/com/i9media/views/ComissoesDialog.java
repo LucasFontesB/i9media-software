@@ -23,11 +23,9 @@ public class ComissoesDialog extends Dialog {
         setCloseOnOutsideClick(false);
         setWidth("600px");
 
-        // Título
         H3 titulo = new H3("Comissões do Usuário");
         titulo.getStyle().set("margin-bottom", "20px");
 
-        // Tabela
         Grid<PedidoInsercao> grid = new Grid<>(PedidoInsercao.class, false);
         grid.addColumn(PedidoInsercao::getAgenciaId)
              .setHeader("Agência")
@@ -42,7 +40,7 @@ public class ComissoesDialog extends Dialog {
              .setAutoWidth(true);
 
         Usuario usuario = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
-        String idExecutivo = usuario.getId(); // ou getExecutivoId()
+        String idExecutivo = usuario.getId(); 
 
         List<PedidoInsercao> lista = PedidoInsercao.buscarTodos().stream()
             .filter(pi -> Objects.equals(pi.getExecutivoId(), idExecutivo))
@@ -50,7 +48,6 @@ public class ComissoesDialog extends Dialog {
 
         grid.setItems(lista);
 
-        // Totalizador
         BigDecimal total = lista.stream()
                 .map(PedidoInsercao::getValorComissao)
                 .filter(Objects::nonNull)
@@ -62,7 +59,6 @@ public class ComissoesDialog extends Dialog {
                 .set("margin-top", "16px")
                 .set("font-size", "1.2rem");
 
-        // Layout principal
         VerticalLayout layout = new VerticalLayout(titulo, grid, totalSpan);
         layout.setPadding(true);
         layout.setSpacing(true);

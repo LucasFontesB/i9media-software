@@ -1,8 +1,9 @@
 package com.i9media.Service;
 
 import com.i9media.models.Executivo;
-import com.i9media.models.PIDTO;
 import com.i9media.models.PedidoInsercao;
+import com.i9media.utils.CanvasComponent;
+import com.vaadin.flow.component.notification.Notification;
 import com.i9media.Conectar;
 
 import java.math.BigDecimal;
@@ -178,7 +179,6 @@ public class DashboardService {
 	            pi.setExecutivoId(rs.getInt("executivo_id"));
 	            pi.setLiquidoFinal(rs.getBigDecimal("liquidofinal"));
 
-	            // campos auxiliares
 	            pi.setClienteNome(rs.getString("cliente_nome"));
 	            pi.setAgenciaNome(rs.getString("agencia_nome"));
 	            pi.setComissaoCalculada(rs.getBigDecimal("comissao_calculada"));
@@ -268,6 +268,37 @@ public class DashboardService {
         }
 
         return 0.0;
+    }
+    
+    public static void atualizarGraficoCampanhas(CanvasComponent canvas, String nomeExecutivo) {
+        try {
+            Map<String, Integer> campanhasPorMes = DashboardService.obterCampanhasPorMes(nomeExecutivo);
+
+            List<String> labelsList = new ArrayList<>(campanhasPorMes.keySet());
+            List<Integer> valuesList = new ArrayList<>(campanhasPorMes.values());
+
+            canvas.clear();
+            canvas.renderBarChart("Campanhas por Mês", labelsList, valuesList, "Quantidade");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Notification.show("Erro ao atualizar gráfico de campanhas: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+        }
+    }
+
+    public static void atualizarGraficoMidia(CanvasComponent canvas, String nomeExecutivo) {
+        try {
+            Map<String, Double> mediaVendas = DashboardService.obterMediaVendasPorMes(nomeExecutivo);
+            List<String> labelsList = new ArrayList<>(mediaVendas.keySet());
+            List<Double> valuesList = new ArrayList<>(mediaVendas.values());
+
+            canvas.clear();
+            canvas.renderLineChart("Média de Vendas por Mês", labelsList, valuesList, "Valor R$");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Notification.show("Erro ao atualizar gráfico de média de vendas: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+        }
     }
 
     public static Map<String, Integer> obterCampanhasPorMes(String nomeExecutivo) throws SQLException {

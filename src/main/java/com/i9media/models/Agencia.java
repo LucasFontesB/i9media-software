@@ -39,7 +39,7 @@ public class Agencia {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // ou logar
+            e.printStackTrace(); 
         }
 
         return agencias;

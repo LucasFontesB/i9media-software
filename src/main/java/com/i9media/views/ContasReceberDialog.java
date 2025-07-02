@@ -46,7 +46,6 @@ public class ContasReceberDialog extends Dialog {
 
         LocalDate hoje = LocalDate.now();
 
-        // Cliente com estilização
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeCliente = "";
             try {
@@ -71,7 +70,6 @@ public class ContasReceberDialog extends Dialog {
             return span;
         })).setHeader("Cliente").setAutoWidth(true);
 
-        // Agência com estilização
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeAgencia = "";
             try {
@@ -96,7 +94,6 @@ public class ContasReceberDialog extends Dialog {
             return span;
         })).setHeader("Agência").setAutoWidth(true);
 
-        // Valor com estilização
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             Span span = new Span(formatarMoeda(pi.getValorLiquido()));
             Date vencimento = pi.getVencimentopiAgencia();
@@ -111,8 +108,7 @@ public class ContasReceberDialog extends Dialog {
             return span;
         })).setHeader("Valor").setAutoWidth(true);
 
-        // Data com estilização
-        grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
+        	grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             Date vencimento = pi.getVencimentopiAgencia();
             if (vencimento != null) {
                 LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
@@ -128,26 +124,24 @@ public class ContasReceberDialog extends Dialog {
             }
         })).setHeader("Data").setAutoWidth(true);
 
-        // Estiliza a linha inteira conforme status
         grid.setClassNameGenerator(pi -> {
             Date vencimento = pi.getVencimentopiAgencia();
             boolean pago = Boolean.TRUE.equals(pi.getPagoPelaAgencia());
 
             if (pago) {
-                return "linha-paga"; // verde
+                return "linha-paga"; 
             }
 
             if (vencimento != null) {
                 LocalDate data = ((java.sql.Date) vencimento).toLocalDate();
                 if (data.isBefore(hoje)) {
-                    return "linha-vencida"; // vermelho
+                    return "linha-vencida";
                 }
             }
 
             return null;
         });
 
-        // Busca os dados
         try {
             List<PedidoInsercao> receber = DashboardService.buscarAReceberMesAtual();
             grid.setItems(receber);
@@ -155,7 +149,6 @@ public class ContasReceberDialog extends Dialog {
             e.printStackTrace();
         }
 
-        // Abrir PI ao dar dois cliques
         grid.addItemDoubleClickListener(event -> {
             PedidoInsercao pi = event.getItem();
             try {

@@ -16,7 +16,6 @@ public class ContaReceberDTO {
     private LocalDate dataVencimento;
     private boolean pago; 
 
-    // Getters e Setters
     public String getCliente() {
         return cliente;
     }
@@ -55,7 +54,6 @@ public class ContaReceberDTO {
         return nf.format(valor);
     }
 
-    // Busca contas a receber por período (data de vencimento)
     public static List<ContaReceberDTO> buscarPorPeriodo(LocalDate inicio, LocalDate fim) {
         List<ContaReceberDTO> resultados = new ArrayList<>();
 
@@ -75,7 +73,7 @@ public class ContaReceberDTO {
 
             while (rs.next()) {
                 ContaReceberDTO dto = new ContaReceberDTO();
-                dto.setCliente(rs.getString("agencia_nome")); // Agora é o nome da agência
+                dto.setCliente(rs.getString("agencia_nome")); 
                 dto.setValor(rs.getBigDecimal("valorliquido"));
                 dto.setDataVencimento(rs.getDate("vencimentopiagencia").toLocalDate());
                 dto.setPago(rs.getBoolean("pago_pela_agencia"));

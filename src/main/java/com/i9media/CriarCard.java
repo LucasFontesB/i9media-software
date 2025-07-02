@@ -23,7 +23,6 @@ public class CriarCard {
 	    }
 	}
 
-    // Agora esse método retorna o CardComponent com acesso ao layout E ao valor
     public static CardComponent Criar(String titulo, String total) {
         VerticalLayout card = new VerticalLayout();
         card.getStyle()

@@ -41,7 +41,6 @@ public class ResumoComissaoDTO {
         this.totalComissao = totalComissao;
     }
 
-    // Método estático para gerar a lista de ResumoComissaoDTO a partir da lista detalhada
     public static List<ResumoComissaoDTO> gerarResumo(List<ComissaoDTO> comissoes) {
         Map<String, List<ComissaoDTO>> agrupadoPorExecutivo = comissoes.stream()
             .collect(Collectors.groupingBy(ComissaoDTO::getExecutivo));

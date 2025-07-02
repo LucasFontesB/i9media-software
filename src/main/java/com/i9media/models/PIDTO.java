@@ -90,7 +90,6 @@ public class PIDTO {
             this.criadoPor = other.getCriadoPor();
             this.dataCriacao = other.getDataCriacao();
 
-            // Novos campos pagos
             this.pagoPelaAgencia = other.getPagoPelaAgencia();
             this.dataConfirmadaPagamentoPelaAgencia = other.getDataConfirmadaPagamentoPelaAgencia();
             this.responsavelPagamentoAgencia = other.getResponsavelPagamentoAgencia();
@@ -167,7 +166,6 @@ public class PIDTO {
         dto.setCriadoPor(pi.getCriadoPor());
         dto.setDataCriacao(pi.getDataCriacao());
 
-        // Novos campos pagos
         dto.setPagoPelaAgencia(pi.getPagoPelaAgencia());
         dto.setDataConfirmadaPagamentoPelaAgencia(pi.getDataConfirmadaPagamentoPelaAgencia());
         dto.setResponsavelPagamentoAgencia(pi.getResponsavelPagamentoAgencia());

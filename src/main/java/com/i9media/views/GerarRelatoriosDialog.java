@@ -94,7 +94,6 @@ public class GerarRelatoriosDialog extends Dialog {
         H4 titulo = new H4("Gerar Comissões");
         titulo.getStyle().set("text-align", "center");
 
-        // Seleção de executivo
         ComboBox<Executivo> comboExecutivo = new ComboBox<>("Executivo");
         comboExecutivo.setItemLabelGenerator(Executivo::getNome);
         List<Executivo> executivos = Executivo.buscarTodosNomes();
@@ -106,13 +105,11 @@ public class GerarRelatoriosDialog extends Dialog {
         comboExecutivo.setPlaceholder("Todos os Executivos");
         comboExecutivo.setClearButtonVisible(true);
 
-        // Tipo relatório Detalhado / Resumido
         RadioButtonGroup<String> tipoRelatorio = new RadioButtonGroup<>();
         tipoRelatorio.setLabel("Tipo de Relatório");
         tipoRelatorio.setItems("Detalhado", "Resumido");
-        tipoRelatorio.setValue("Detalhado");  // padrão
+        tipoRelatorio.setValue("Detalhado"); 
 
-        // Radio para seleção de tipo de filtro (mês/período)
         RadioButtonGroup<String> tipoFiltro = new RadioButtonGroup<>();
         tipoFiltro.setLabel("Filtrar por:");
         tipoFiltro.setItems("Mês", "Período");
@@ -133,7 +130,6 @@ public class GerarRelatoriosDialog extends Dialog {
             dataFinal.setVisible(!isMes);
         });
 
-     // Grid detalhado
         Grid<ComissaoDTO> gridDetalhado = new Grid<>(ComissaoDTO.class, false);
         gridDetalhado.addColumn(ComissaoDTO::getExecutivo).setHeader("Executivo");
         gridDetalhado.addColumn(ComissaoDTO::getCliente).setHeader("Cliente");
@@ -145,7 +141,6 @@ public class GerarRelatoriosDialog extends Dialog {
         gridDetalhado.setWidthFull();
         gridDetalhado.setHeight("300px");
 
-        // Grid resumido
         Grid<ResumoComissaoDTO> gridResumido = new Grid<>(ResumoComissaoDTO.class, false);
         gridResumido.addColumn(ResumoComissaoDTO::getExecutivo).setHeader("Executivo");
         gridResumido.addColumn(ResumoComissaoDTO::getTotalPis).setHeader("Total de PIs");
@@ -154,8 +149,6 @@ public class GerarRelatoriosDialog extends Dialog {
         gridResumido.setHeight("300px");
         gridResumido.setVisible(false);
         
-
-        // Botões
         HorizontalLayout botoes = new HorizontalLayout();
         Button gerar = new Button("Gerar", e -> {
             Executivo selecionado = comboExecutivo.getValue();
@@ -201,7 +194,6 @@ public class GerarRelatoriosDialog extends Dialog {
                     gridDetalhado.setVisible(true);
                     gridResumido.setVisible(false);
                 } else {
-                    // Agrupar para resumo
                     Map<String, List<ComissaoDTO>> agrupado = resultados.stream()
                         .collect(Collectors.groupingBy(ComissaoDTO::getExecutivo));
 
@@ -494,7 +486,6 @@ public class GerarRelatoriosDialog extends Dialog {
                     String nomeArquivo = String.format("relatorio-contas-a-pagar-%s-a-%s-gerado-em-%s.pdf", dataInicioStr, dataFimStr, dataHoraStr);
 
                     resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
-                    // resto do código
                 } else {
                     Notification.show("Selecione as datas para gerar o nome do arquivo.", 3000, Notification.Position.MIDDLE);
                 }
@@ -572,7 +563,6 @@ public class GerarRelatoriosDialog extends Dialog {
                 listaContas.removeIf(c -> c.isPago());
             }
 
-            // 🔶 Ordenar por data de vencimento (crescente)
             listaContas.sort(Comparator.comparing(ContaReceberDTO::getDataVencimento));
 
             grid.setItems(listaContas);
@@ -628,7 +618,6 @@ public class GerarRelatoriosDialog extends Dialog {
                     String nomeArquivo = String.format("relatorio-contas-a-receber-%s-a-%s-gerado-em-%s.pdf", dataInicioStr, dataFimStr, dataHoraStr);
 
                     resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
-                    // resto do código
                 } else {
                     Notification.show("Selecione as datas para gerar o nome do arquivo.", 3000, Notification.Position.MIDDLE);
                 }

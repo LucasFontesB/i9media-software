@@ -23,7 +23,7 @@ public class NavegadorDashboards {
             case "planejamento":
                 UI.getCurrent().navigate("dashboard-planejamento");
                 break;
-            case "adm": // Use apenas um caso, o correto é "adm"
+            case "adm": 
                 UI.getCurrent().navigate("dashboard-adm");
                 break;
             case "executivo":

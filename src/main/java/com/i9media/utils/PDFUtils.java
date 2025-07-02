@@ -38,7 +38,6 @@ public class PDFUtils {
 	    PdfWriter.getInstance(document, baos);
 	    document.open();
 
-	    // Logo
 	    try {
 	        InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
 	        if (logoStream != null) {
@@ -51,21 +50,18 @@ public class PDFUtils {
 	        System.err.println("Erro ao carregar logo: " + e.getMessage());
 	    }
 
-	    // Slogan
 	    Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
 	    Paragraph lema = new Paragraph("Always Half Full", lemaFont);
 	    lema.setAlignment(Element.ALIGN_CENTER);
 	    lema.setSpacingAfter(10);
 	    document.add(lema);
 
-	    // Título
 	    Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
 	    Paragraph titulo = new Paragraph("Relatório de Contas a Receber", tituloFont);
 	    titulo.setAlignment(Element.ALIGN_CENTER);
 	    titulo.setSpacingAfter(10);
 	    document.add(titulo);
 
-	    // Rodapé com autor e data
 	    Font infoFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
 	    String dataHoraAtual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 	    Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, infoFont);
@@ -73,7 +69,6 @@ public class PDFUtils {
 	    rodape.setSpacingAfter(5);
 	    document.add(rodape);
 
-	    // Período da busca
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	    String periodoTexto = "Período da busca: " + dataInicial.format(dtf) + " a " + dataFinal.format(dtf);
 	    Paragraph periodo = new Paragraph(periodoTexto, infoFont);
@@ -81,7 +76,6 @@ public class PDFUtils {
 	    periodo.setSpacingAfter(15);
 	    document.add(periodo);
 
-	    // Tabela de dados
 	    PdfPTable table = new PdfPTable(4);
 	    table.setWidthPercentage(100);
 	    table.setWidths(new float[]{4, 2, 3, 2});
@@ -123,7 +117,6 @@ public class PDFUtils {
 
 	    document.add(table);
 
-	    // Total geral
 	    BigDecimal total = contas.stream().map(ContaReceberDTO::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
 
 	    Font totalFont = new Font(Font.HELVETICA, 12, Font.BOLD, laranjaForte);
@@ -144,7 +137,6 @@ public class PDFUtils {
 	    PdfWriter.getInstance(document, baos);
 	    document.open();
 
-	    // Logo
 	    try {
 	        InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
 	        if (logoStream != null) {
@@ -157,21 +149,18 @@ public class PDFUtils {
 	        System.err.println("Erro ao carregar logo: " + e.getMessage());
 	    }
 
-	    // Slogan
 	    Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
 	    Paragraph lema = new Paragraph("Always Half Full", lemaFont);
 	    lema.setAlignment(Element.ALIGN_CENTER);
 	    lema.setSpacingAfter(10);
 	    document.add(lema);
 
-	    // Título
 	    Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
 	    Paragraph titulo = new Paragraph("Relatório de Contas a Pagar", tituloFont);
 	    titulo.setAlignment(Element.ALIGN_CENTER);
 	    titulo.setSpacingAfter(10);
 	    document.add(titulo);
 
-	    // Rodapé com autor e data
 	    Font infoFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
 	    String dataHoraAtual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 	    Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, infoFont);
@@ -179,7 +168,6 @@ public class PDFUtils {
 	    rodape.setSpacingAfter(5);
 	    document.add(rodape);
 
-	    // Período da busca
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	    String periodoTexto = "Período da busca: " + dataInicial.format(dtf) + " a " + dataFinal.format(dtf);
 	    Paragraph periodo = new Paragraph(periodoTexto, infoFont);
@@ -187,7 +175,6 @@ public class PDFUtils {
 	    periodo.setSpacingAfter(15);
 	    document.add(periodo);
 
-	    // Tabela
 	    PdfPTable table = new PdfPTable(4);
 	    table.setWidthPercentage(100);
 	    table.setWidths(new float[]{4, 2, 3, 2});
@@ -220,7 +207,6 @@ public class PDFUtils {
 
 	    document.add(table);
 
-	    // Total geral
 	    BigDecimal total = contas.stream()
 	        .map(ContaPagarDTO::getValor)
 	        .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -243,7 +229,6 @@ public class PDFUtils {
 		PdfWriter.getInstance(document, baos);
 		document.open();
 
-		// Logo
 		try {
 			InputStream logoStream = PDFUtils.class.getResourceAsStream("/META-INF/resources/images/logo.png");
 			if (logoStream != null) {
@@ -258,14 +243,12 @@ public class PDFUtils {
 			System.err.println("Erro ao carregar a logo: " + e.getMessage());
 		}
 
-		// Slogan
 		Font lemaFont = new Font(Font.HELVETICA, 12, Font.ITALIC, Color.DARK_GRAY);
 		Paragraph lema = new Paragraph("Always Half Full", lemaFont);
 		lema.setAlignment(Element.ALIGN_CENTER);
 		lema.setSpacingAfter(10);
 		document.add(lema);
 
-		// Título
 		Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD, laranjaForte);
 		Paragraph titulo = new Paragraph("Relatório de Comissões", tituloFont);
 		titulo.setAlignment(Element.ALIGN_CENTER);
@@ -273,24 +256,20 @@ public class PDFUtils {
 		titulo.setSpacingAfter(10);
 		document.add(titulo);
 
-		// Rodapé (autor e data)
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 		String dataHoraAtual = LocalDateTime.now().format(formatter);
 		Font rodapeFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
 
-		// Linha 1: criado por + data/hora
 		Paragraph rodape = new Paragraph("PDF criado por " + criadoPor + " - " + dataHoraAtual, rodapeFont);
 		rodape.setAlignment(Element.ALIGN_CENTER);
 		rodape.setSpacingAfter(5);
 		document.add(rodape);
 
-		// Linha 2: filtro aplicado
 		String filtroTexto;
 		if (periodoInicio != null && periodoFim != null) {
 			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 			filtroTexto = "Período da busca: " + periodoInicio.format(dtf) + " a " + periodoFim.format(dtf);
 		} else {
-			// Exemplo: "Mês da busca: Julho / 2025"
 			filtroTexto = "Mês da busca: " + mesNome + " / " + ano;
 		}
 
@@ -303,7 +282,6 @@ public class PDFUtils {
 		currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
 
 		if (detalhado) {
-			// DETALHADO
 			PdfPTable table = new PdfPTable(6);
 			table.setWidthPercentage(100);
 			table.setWidths(new float[] { 3, 3, 3, 2, 2, 2 });
@@ -331,7 +309,6 @@ public class PDFUtils {
 
 			document.add(table);
 		} else {
-			// RESUMIDO
 			Map<String, List<ComissaoDTO>> agrupadoPorExecutivo = comissoes.stream()
 					.collect(Collectors.groupingBy(ComissaoDTO::getExecutivo));
 

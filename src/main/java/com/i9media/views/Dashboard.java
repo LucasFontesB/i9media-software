@@ -67,7 +67,6 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
             .set("right", "0")
             .set("z-index", "100");
 
-        // Seções do header
         HorizontalLayout leftSection = new HorizontalLayout();
         leftSection.setAlignItems(Alignment.CENTER);
         leftSection.setSpacing(true);

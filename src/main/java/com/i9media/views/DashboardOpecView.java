@@ -84,10 +84,8 @@ public class DashboardOpecView extends Dashboard{
 	        int total = lista.size();
 
 	        cardTotalPIs = CriarCard.Criar("Total de PIs", String.valueOf(total));
-	        /*Component card_valortotal = CriarCard.Criar("Valor Total No Mês", "R$ 600,00");
-	        Component card_comissaomedia = CriarCard.Criar("Comissão Média", "14.0%");*/
 
-	        cardslayout.add(cardTotalPIs.layout/*, card_valortotal, card_comissaomedia*/);
+	        cardslayout.add(cardTotalPIs.layout);
 	        
 	        Runnable atualizarTotalPIs = () -> {
 	            List<PedidoInsercao> listaPI = PedidoInsercao.buscarTodos();

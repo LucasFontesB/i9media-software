@@ -187,7 +187,7 @@ public class AdicionarPI extends Dialog {
                 atualizarCamposAgencia(agenciaSelecionada.getNome());
             } else {
                 executivoField.clear();
-                executivoField.setItems(); // limpa a lista
+                executivoField.setItems();
             }
         });
 
@@ -291,32 +291,28 @@ public class AdicionarPI extends Dialog {
         if (agencia == null) {
             percentualBVField.clear();
             executivoField.clear();
-            executivoField.setItems(); // Limpar itens
+            executivoField.setItems();
             return;
         }
 
         percentualBVField.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
-
-        // Buscar executivos da agência (lista)
+        
         List<Executivo> executivosDaAgencia = Executivo.buscarExecutivoPorAgencia(agencia.getId());
 
         if (executivosDaAgencia.isEmpty()) {
             executivoField.clear();
-            executivoField.setItems(); // Limpa os itens
+            executivoField.setItems();
             Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
             return;
         }
 
-        // Popular o ComboBox com os executivos da agência
         executivoField.setItems(executivosDaAgencia);
 
-        // Se existir um executivo padrão, seleciona ele
         Executivo executivoResponsavel = null;
         if (agencia.getExecutivoPadrao() != null) {
             executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
         }
 
-        // Se executivo padrão não está na lista, pode escolher o primeiro
         if (executivoResponsavel == null || !executivosDaAgencia.contains(executivoResponsavel)) {
             executivoResponsavel = executivosDaAgencia.get(0);
         }

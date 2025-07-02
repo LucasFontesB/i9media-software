@@ -309,7 +309,6 @@ public class PedidoInsercao {
         pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
         pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
 
-        // NOVAS LINHAS
         pi.setCriadoPor(rs.getString("criado_por"));
         Timestamp timestamp = rs.getTimestamp("data_de_criacao");
         if (timestamp != null) {
@@ -390,7 +389,6 @@ public class PedidoInsercao {
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
                 pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
 
-                // Novas colunas:
                 pi.setCriadoPor(rs.getString("criado_por"));
                 Timestamp timestamp = rs.getTimestamp("data_de_criacao");
                 if (timestamp != null) {
@@ -482,7 +480,6 @@ public class PedidoInsercao {
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
                 pi.setEdicaoInicio(rs.getTimestamp("edicao_inicio"));
                 
-                // Novas colunas:
                 pi.setCriadoPor(rs.getString("criado_por"));
                 Timestamp timestamp = rs.getTimestamp("data_de_criacao");
                 if (timestamp != null) {
@@ -597,7 +594,6 @@ public class PedidoInsercao {
             stmt.setDate(23, this.dataPagamentoParaVeiculo != null ? new java.sql.Date(this.dataPagamentoParaVeiculo.getTime()) : null);
             stmt.setString(24, this.nfVeiculo);
 
-            // Novos campos
             if (this.pagoPelaAgencia != null) {
                 stmt.setBoolean(25, this.pagoPelaAgencia);
             } else {

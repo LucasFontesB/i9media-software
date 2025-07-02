@@ -43,7 +43,6 @@ public class ContasPagarDialog extends Dialog {
 
         LocalDate hoje = LocalDate.now();
 
-        // Cliente com estilização "vencido"
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeCliente = "";
             try {
@@ -68,7 +67,6 @@ public class ContasPagarDialog extends Dialog {
             return span;
         })).setHeader("Cliente").setAutoWidth(true);
 
-        // Agência com estilização "vencido"
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             String nomeAgencia = "";
             try {
@@ -93,7 +91,6 @@ public class ContasPagarDialog extends Dialog {
             return span;
         })).setHeader("Agência").setAutoWidth(true);
 
-        // Valor com estilização "vencido"
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             Span span = new Span(formatarMoeda(pi.getRepasseVeiculo()));
             Date dataPagamento = pi.getDataPagamentoParaVeiculo();
@@ -108,7 +105,6 @@ public class ContasPagarDialog extends Dialog {
             return span;
         })).setHeader("Valor").setAutoWidth(true);
 
-        // Data com estilização "vencido"
         grid.addColumn(new ComponentRenderer<Span, PedidoInsercao>(pi -> {
             Date dataPagamento = pi.getDataPagamentoParaVeiculo();
             if (dataPagamento != null) {
@@ -125,24 +121,22 @@ public class ContasPagarDialog extends Dialog {
             }
         })).setHeader("Data").setAutoWidth(true);
 
-        // Busca os dados
         try {
             List<PedidoInsercao> pagar = DashboardService.buscarAPagarMesAtual();
             grid.setItems(pagar);
 
-            // Estiliza a linha inteira conforme status
             grid.setClassNameGenerator(pi -> {
                 if (Boolean.TRUE.equals(pi.getPagoParaVeiculo())) {
-                    return "linha-paga"; // verde
+                    return "linha-paga";
                 }
                 Date dataPagamento = pi.getDataPagamentoParaVeiculo();
                 if (dataPagamento != null) {
                     LocalDate data = ((java.sql.Date) dataPagamento).toLocalDate();
                     if (data.isBefore(hoje)) {
-                        return "linha-vencida"; // vermelho
+                        return "linha-vencida";
                     }
                 }
-                return null; // sem estilo
+                return null; 
             });
 
         } catch (SQLException e) {

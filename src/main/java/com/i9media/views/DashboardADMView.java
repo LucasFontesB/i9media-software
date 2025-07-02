@@ -58,12 +58,10 @@ public class DashboardADMView extends Dashboard {
         layoutPrincipal.setPadding(false);
         layoutPrincipal.setSpacing(false);
 
-        // Menu lateral fixo à esquerda, altura cheia
         menuLateral = criarMenuLateral();
         menuLateral.setHeightFull();
         menuLateral.getStyle().set("margin-top", "64px");
 
-        // Conteúdo principal (cards e outros)
         conteudoPrincipal = new VerticalLayout();
         conteudoPrincipal.setSizeFull();
         conteudoPrincipal.setPadding(true);

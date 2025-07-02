@@ -98,7 +98,6 @@ public class PIView extends Dialog {
     		    usuarioLogado.getDepartamento() != null && 
     		    usuarioLogado.getDepartamento().equalsIgnoreCase("EXECUTIVO")) {
 
-    		    // Remove todos os botões
     		    editarButton.setVisible(false);
     		    salvarButton.setVisible(false);
     		    cancelarButton.setVisible(false);
@@ -187,7 +186,6 @@ public class PIView extends Dialog {
                 new FormLayout.ResponsiveStep("600px", 2)
         );
 
-        // Bind fields
         binder.forField(clienteField)
         .withValidator(Objects::nonNull, "Cliente obrigatório")
         .bind(
@@ -348,10 +346,8 @@ public class PIView extends Dialog {
         agenciaField.addValueChangeListener(event -> {
             Agencia agenciaSelecionada = event.getValue();
             if (agenciaSelecionada != null) {
-                // Atualiza campos com base na agência selecionada
                 atualizarCamposAgencia(agenciaSelecionada.getNome());
             } else {
-                // Limpar campos caso nenhuma agência esteja selecionada
                 porcBV.clear();
                 executivoField.clear();
             }
@@ -366,7 +362,6 @@ public class PIView extends Dialog {
                 }
 
                 if (bloqueado) {
-                    // Atualiza o objeto local com o usuário atual como editor
                     pi.setEmEdicaoPor(usuarioLogado.getUsuario());
 
                     Notification.show("PI bloqueado com sucesso. Você pode editar.");
@@ -478,7 +473,6 @@ public class PIView extends Dialog {
         layoutInfosGerais.setAlignItems(FlexComponent.Alignment.CENTER);
         layoutInfosGerais.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
 
-        // Opcional: definir uma largura máxima para os campos, para que o wrap funcione melhor:
         criadoPorField.setWidth("250px");
         dataCriacaoField.setWidth("250px");
         pagoPelaAgenciaField.setWidth("150px");
@@ -501,18 +495,15 @@ public class PIView extends Dialog {
         	    cancelarButton.setVisible(false);
         	    deletarButton.setVisible(false);
 
-        	    // Criação dos componentes
         	    Checkbox pagoPelaAgenciaCheckbox = new Checkbox("Pago pela Agência");
         	    Checkbox pagoAoVeiculoCheckbox = new Checkbox("Pago ao Veículo");
 
         	    DatePicker dataPagamentoPelaAgenciaPicker = new DatePicker("Data de Pagamento pela Agência");
         	    DatePicker dataPagamentoAoVeiculoPicker = new DatePicker("Data de Pagamento ao Veículo");
 
-        	    // Inicializar checkboxes com valores existentes da PI
         	    pagoPelaAgenciaCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoPelaAgencia()));
         	    pagoAoVeiculoCheckbox.setValue(Boolean.TRUE.equals(pi.getPagoParaVeiculo()));
 
-        	    // Inicializar campos de data com valores existentes
         	    if (pi.getDataConfirmadaPagamentoPelaAgencia() != null) {
         	        java.sql.Date sqlDate = new java.sql.Date(pi.getDataConfirmadaPagamentoPelaAgencia().getTime());
         	        dataPagamentoPelaAgenciaPicker.setValue(sqlDate.toLocalDate());
@@ -525,7 +516,6 @@ public class PIView extends Dialog {
 
         	    Button confirmarButton = new Button("Confirmar Pagamento", e -> {
         	        try {
-        	            // --- PAGAMENTO PELA AGÊNCIA ---
         	            Boolean novoPagoAgencia = pagoPelaAgenciaCheckbox.getValue();
         	            Boolean atualPagoAgencia = pi.getPagoPelaAgencia();
         	            pi.setPagoPelaAgencia(novoPagoAgencia);
@@ -542,7 +532,6 @@ public class PIView extends Dialog {
         	                pi.setResponsavelPagamentoAgencia(usuarioLogado.getNome());
         	            }
 
-        	            // --- PAGAMENTO AO VEÍCULO ---
         	            Boolean novoPagoVeiculo = pagoAoVeiculoCheckbox.getValue();
         	            Boolean atualPagoVeiculo = pi.getPagoParaVeiculo();
         	            pi.setPagoParaVeiculo(novoPagoVeiculo);
@@ -559,7 +548,6 @@ public class PIView extends Dialog {
         	                pi.setResponsavelPagamentoVeiculo(usuarioLogado.getNome());
         	            }
 
-        	            // Atualização e notificação
         	            PIUpdateBroadcaster.broadcast();
         	            pi.atualizarPagamentoFinanceiro();
 
@@ -570,7 +558,6 @@ public class PIView extends Dialog {
         	        }
         	    });
 
-        	    // Montagem do layout
         	    FormLayout financeiroForm = new FormLayout();
         	    financeiroForm.add(
         	        pagoPelaAgenciaCheckbox, dataPagamentoPelaAgenciaPicker,
@@ -651,32 +638,28 @@ public class PIView extends Dialog {
         if (agencia == null) {
             porcBV.clear();
             executivoField.clear();
-            executivoField.setItems(); // Limpar itens
+            executivoField.setItems(); 
             return;
         }
 
         porcBV.setValue(agencia.getValorBV() != null ? agencia.getValorBV().doubleValue() : 0);
 
-        // Buscar executivos da agência (lista)
         List<Executivo> executivosDaAgencia = Executivo.buscarExecutivoPorAgencia(agencia.getId());
 
         if (executivosDaAgencia.isEmpty()) {
             executivoField.clear();
-            executivoField.setItems(); // Limpa os itens
+            executivoField.setItems(); 
             Notification.show("Executivo responsável pela agência não encontrado.", 1500, Notification.Position.MIDDLE);
             return;
         }
 
-        // Popular o ComboBox com os executivos da agência
         executivoField.setItems(executivosDaAgencia);
 
-        // Se existir um executivo padrão, seleciona ele
         Executivo executivoResponsavel = null;
         if (agencia.getExecutivoPadrao() != null) {
             executivoResponsavel = Executivo.buscarPorId(agencia.getExecutivoPadrao());
         }
 
-        // Se executivo padrão não está na lista, pode escolher o primeiro
         if (executivoResponsavel == null || !executivosDaAgencia.contains(executivoResponsavel)) {
             executivoResponsavel = executivosDaAgencia.get(0);
         }

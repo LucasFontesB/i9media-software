@@ -10,12 +10,14 @@ import java.util.stream.Collectors;
 
 import com.i9media.CriarCard;
 import com.i9media.Service.DashboardService;
+import com.i9media.models.Executivo;
 import com.i9media.models.PedidoInsercao;
 import com.i9media.models.Usuario;
 import com.i9media.utils.CanvasComponent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
@@ -39,6 +41,10 @@ public class DashboardExecutivoView extends Dashboard {
 
     private CanvasComponent campaignsCanvas;
     private CanvasComponent mediaTypeCanvas;
+    
+    Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
+    
+    ComboBox<Executivo> comboExecutivo = new ComboBox<>("Selecionar Executivo");
 
     public DashboardExecutivoView() {
         super();
@@ -65,31 +71,50 @@ public class DashboardExecutivoView extends Dashboard {
 
         campaignsCanvas = new CanvasComponent(500, 300);
         mediaTypeCanvas = new CanvasComponent(400, 300);
-        
-        updateVisualInfo(executivoLogado); 
-        
+
         Div wrapper1 = new Div(campaignsCanvas);
         wrapper1.setWidth("500px");
         wrapper1.setHeight("300px");
-        wrapper1.getStyle()
-            .set("overflow", "hidden")
-            .set("flex-shrink", "0");
 
         Div wrapper2 = new Div(mediaTypeCanvas);
         wrapper2.setWidth("400px");
         wrapper2.setHeight("300px");
-        wrapper2.getStyle()
-            .set("overflow", "hidden")
-            .set("flex-shrink", "0");
 
         HorizontalLayout chartsLayout = new HorizontalLayout(wrapper1, wrapper2);
         chartsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         chartsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
+        if ("adm".equalsIgnoreCase(usuarioLogado.getDepartamento())) {
+            comboExecutivo.setItemLabelGenerator(Executivo::getNome);
+            comboExecutivo.setItems(Executivo.buscarTodosNomes());
+            comboExecutivo.setWidth("300px");
+
+            comboExecutivo.addValueChangeListener(event -> {
+                Executivo selecionado = event.getValue();
+                if (selecionado != null) {
+                    atualizarPainel(mainLayout, selecionado.getNome());
+                }
+            });
+
+            mainLayout.add(comboExecutivo);
+        }
+
         mainLayout.add(title, metricsLayout, chartsLayout);
-        
+
+        // Atualiza inicialmente com o executivo logado
+        atualizarPainel(mainLayout, executivoLogado);
+
+        add(mainLayout);
+        return mainLayout;
+    }
+    
+    private void atualizarPainel(VerticalLayout mainLayout, String nomeExecutivo) {
+        updateVisualInfo(nomeExecutivo);
+
         try {
-            List<PedidoInsercao> pedidos = DashboardService.obterPedidosComComissaoMensal(executivoLogado);
+            List<PedidoInsercao> pedidos = DashboardService.obterPedidosComComissaoMensal(nomeExecutivo);
+            DashboardService.atualizarGraficoCampanhas(campaignsCanvas, nomeExecutivo);
+            DashboardService.atualizarGraficoMidia(mediaTypeCanvas, nomeExecutivo);
 
             Grid<PedidoInsercao> grid = new Grid<>(PedidoInsercao.class, false);
             grid.addColumn(PedidoInsercao::getAgenciaNome).setHeader("Agência");
@@ -109,16 +134,18 @@ public class DashboardExecutivoView extends Dashboard {
                 .set("display", "flex")
                 .set("justify-content", "center");
 
+            List<Component> toRemove = mainLayout.getChildren()
+                .filter(c -> (c instanceof H3) || (c instanceof Div))
+                .collect(Collectors.toList());
+
+            toRemove.forEach(mainLayout::remove);
+
             mainLayout.add(tituloTabela, gridWrapper);
 
         } catch (SQLException e) {
             e.printStackTrace();
-            Notification.show("Erro ao carregar PIs: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+            Notification.show("Erro ao atualizar dados: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
         }
-
-        add(mainLayout);
-
-        return mainLayout;
     }
 
     private String getExecutivoLogadoNome() {

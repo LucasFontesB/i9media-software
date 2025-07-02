@@ -21,10 +21,8 @@ public class ContaPagarDTO {
     private LocalDate dataPagamento;
     private String status;
 
-    // Construtor vazio (opcional)
     public ContaPagarDTO() {}
 
-    // Construtor com todos os campos (opcional)
     public ContaPagarDTO(String veiculo, BigDecimal valor, LocalDate dataPagamento, String status) {
         this.veiculo = veiculo;
         this.valor = valor;
@@ -65,7 +63,6 @@ public class ContaPagarDTO {
         return resultados;
     }
 
-    // Getters
     public String getVeiculo() {
         return veiculo;
     }
@@ -82,7 +79,6 @@ public class ContaPagarDTO {
         return status;
     }
 
-    // Setters
     public void setVeiculo(String veiculo) {
         this.veiculo = veiculo;
     }
@@ -99,7 +95,6 @@ public class ContaPagarDTO {
         this.status = status;
     }
 
-    // Valor formatado para exibição
     public String getValorFormatado() {
         if (valor == null) return "R$ 0,00";
         NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));

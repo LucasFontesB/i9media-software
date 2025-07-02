@@ -13,7 +13,6 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.util.Collections; 
 
 public class CadastroAgenciaView extends Dialog {

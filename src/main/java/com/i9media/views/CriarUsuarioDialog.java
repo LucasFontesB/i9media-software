@@ -77,7 +77,7 @@ public class CriarUsuarioDialog extends Dialog {
         
         uploadFoto.setAcceptedFileTypes("image/png", "image/jpeg", "image/jpg");
         uploadFoto.setMaxFiles(1);
-        uploadFoto.setMaxFileSize(5 * 1024 * 1024); // 2MB
+        uploadFoto.setMaxFileSize(5 * 1024 * 1024); 
         uploadFoto.setDropLabel(new com.vaadin.flow.component.html.Span("Arraste ou selecione uma imagem"));
 
         uploadFoto.addSucceededListener(event -> {
