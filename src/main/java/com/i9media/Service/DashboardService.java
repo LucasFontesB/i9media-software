@@ -17,6 +17,27 @@ import java.util.Map;
 
 public class DashboardService {
 	
+	public static double obterTotalLiquidoFinalPorPeriodo(LocalDate dataInicio, LocalDate dataFim) throws SQLException {
+	    double total = 0.0;
+
+	    String sql = "SELECT liquidofinal FROM pi WHERE vencimentopiagencia >= ? AND vencimentopiagencia <= ?";
+
+	    try (Connection conn = Conectar.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+	        stmt.setDate(1, java.sql.Date.valueOf(dataInicio));
+	        stmt.setDate(2, java.sql.Date.valueOf(dataFim));
+
+	        try (ResultSet rs = stmt.executeQuery()) {
+	            while (rs.next()) {
+	                total += rs.getDouble("liquidofinal");
+	            }
+	        }
+	    }
+
+	    return total;
+	}
+	
 	public static double obterContasReceberMesAtual() throws SQLException {
 	    double total = 0.0;
 

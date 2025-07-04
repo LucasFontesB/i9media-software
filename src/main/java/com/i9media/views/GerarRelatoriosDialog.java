@@ -3,12 +3,14 @@ package com.i9media.views;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -17,7 +19,11 @@ import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+
+import com.google.common.base.Supplier;
+import com.i9media.Service.DashboardService;
 import com.i9media.models.ComissaoDTO;
+import com.i9media.models.ComissaoEspecialDTO;
 import com.i9media.models.ContaPagarDTO;
 import com.i9media.models.ContaReceberDTO;
 import com.i9media.models.Executivo;
@@ -64,21 +70,160 @@ public class GerarRelatoriosDialog extends Dialog {
             .set("text-align", "center");
 
         Button btnComissoes = new Button("Gerar Comissões", e -> gerarComissoes());
+        Button btnComissoesEspeciais = new Button("Gerar Comissões Especiais", e -> gerarRelatorioComissoesEspeciais());
         Button btnPagar = new Button("Gerar Contas a Pagar", e -> gerarContasAPagar());
         Button btnReceber = new Button("Gerar Contas a Receber", e -> gerarContasAReceber());
 
         btnComissoes.setWidth("90%");
         btnPagar.setWidth("90%");
         btnReceber.setWidth("90%");
-
+        btnComissoesEspeciais.setWidth("90%");
+        
         Button btnFechar = new Button("Fechar", e -> this.close());
         btnFechar.setWidth("70%");
         btnFechar.getStyle()
             .set("margin-top", "20px");
 
-        layout.add(titulo, btnComissoes, btnPagar, btnReceber, btnFechar);
+        layout.add(titulo, btnComissoes, btnComissoesEspeciais, btnPagar, btnReceber, btnFechar);
         add(layout);
     }
+    
+    private void gerarRelatorioComissoesEspeciais() {
+	    Dialog dialog = new Dialog();
+	    dialog.setCloseOnOutsideClick(false);
+	    dialog.setWidth("700px");
+	    dialog.setHeight("600px");
+
+	    VerticalLayout layout = new VerticalLayout();
+	    layout.setPadding(true);
+	    layout.setSpacing(true);
+
+	    H4 titulo = new H4("Relatório de Comissões Especiais");
+	    titulo.getStyle().set("text-align", "center");
+
+	    DatePicker dataInicial = new DatePicker("Data Inicial");
+	    DatePicker dataFinal = new DatePicker("Data Final");
+
+	    ComboBox<String> comboUsuario = new ComboBox<>("Usuário");
+	    comboUsuario.setItems("Todos", "Sumaia", "Karina", "Brenda");
+	    comboUsuario.setValue("Todos");
+
+	    Grid<ComissaoEspecialDTO> grid = new Grid<>(ComissaoEspecialDTO.class, false);
+	    grid.addColumn(ComissaoEspecialDTO::getNome).setHeader("Nome");
+	    grid.addColumn(dto -> String.format("%.2f%%", dto.getPercentual())).setHeader("Percentual");
+	    grid.addColumn(dto -> String.format("R$ %.2f", dto.getValor())).setHeader("Comissão (R$)");
+	    grid.setWidthFull();
+	    grid.setHeight("400px");
+
+	    Div pdfDownloadContainer = new Div();
+
+	    // Método interno que retorna a lista de comissões para o período e usuário escolhidos
+	    Supplier<List<ComissaoEspecialDTO>> buscarComissoes = () -> {
+	        LocalDate inicio = dataInicial.getValue();
+	        LocalDate fim = dataFinal.getValue();
+	        String usuarioSelecionado = comboUsuario.getValue();
+
+	        if (inicio == null || fim == null) {
+	            Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+	            return Collections.emptyList();
+	        }
+
+	        double valorBruto = 0.0;
+	        try {
+	            valorBruto = DashboardService.obterTotalLiquidoFinalPorPeriodo(inicio, fim);
+	        } catch (SQLException ex) {
+	            Notification.show("Erro ao buscar dados: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+	            ex.printStackTrace();
+	            return Collections.emptyList();
+	        }
+
+	        if (valorBruto <= 0) {
+	            Notification.show("Nenhum valor encontrado no período selecionado.", 3000, Notification.Position.MIDDLE);
+	            return Collections.emptyList();
+	        }
+
+	        List<ComissaoEspecialDTO> lista = new ArrayList<>();
+	        if ("Todos".equalsIgnoreCase(usuarioSelecionado)) {
+	            lista.add(new ComissaoEspecialDTO("Sumaia", 10.0, (valorBruto * 10.0) / 100));
+	            lista.add(new ComissaoEspecialDTO("Karina", 10.0, (valorBruto * 10.0) / 100));
+	            lista.add(new ComissaoEspecialDTO("Brenda", 1.5, (valorBruto * 1.5) / 100));
+	        } else if ("Sumaia".equalsIgnoreCase(usuarioSelecionado)) {
+	            lista.add(new ComissaoEspecialDTO("Sumaia", 10.0, (valorBruto * 10.0) / 100));
+	        } else if ("Karina".equalsIgnoreCase(usuarioSelecionado)) {
+	            lista.add(new ComissaoEspecialDTO("Karina", 10.0, (valorBruto * 10.0) / 100));
+	        } else if ("Brenda".equalsIgnoreCase(usuarioSelecionado)) {
+	            lista.add(new ComissaoEspecialDTO("Brenda", 1.5, (valorBruto * 1.5) / 100));
+	        }
+	        return lista;
+	    };
+
+	    Button gerar = new Button("Gerar", e -> {
+	        List<ComissaoEspecialDTO> comissoes = buscarComissoes.get();
+	        grid.setItems(comissoes);
+	        if (!comissoes.isEmpty()) {
+	            Notification.show("Relatório gerado com sucesso!", 3000, Notification.Position.MIDDLE);
+	        } else {
+	            grid.setItems(Collections.emptyList());
+	        }
+	        pdfDownloadContainer.removeAll(); // limpa link do PDF anterior ao gerar novo relatório
+	    });
+
+	    Button gerarPDF = new Button("Gerar PDF", e -> {
+	        LocalDate inicio = dataInicial.getValue();
+	        LocalDate fim = dataFinal.getValue();
+	        String usuarioSelecionado = comboUsuario.getValue();
+
+	        if (inicio == null || fim == null) {
+	            Notification.show("Selecione a data inicial e final.", 3000, Notification.Position.MIDDLE);
+	            return;
+	        }
+
+	        // Busca as comissões independente da grid
+	        List<ComissaoEspecialDTO> comissoesParaPDF = buscarComissoes.get();
+	        if (comissoesParaPDF.isEmpty()) {
+	            Notification.show("Nenhum dado para gerar o PDF.", 3000, Notification.Position.MIDDLE);
+	            return;
+	        }
+
+	        try {
+	            byte[] pdfBytes = PDFUtils.gerarRelatorioComissoesEspeciais(comissoesParaPDF, inicio, fim, usuarioLogado.getNome(), usuarioSelecionado);
+
+	            DateTimeFormatter dtfData = DateTimeFormatter.ofPattern("ddMMyyyy");
+	            DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HHmm");
+
+	            String dataInicioStr = inicio.format(dtfData);
+	            String dataFimStr = fim.format(dtfData);
+	            String dataHoraStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyy_HHmm"));
+
+	            String usuarioStr = usuarioSelecionado.replaceAll("\\s+", "-").toLowerCase();
+	            String nomeArquivo = String.format("relatorio-comissao-especial-%s-%s-a-%s-%s.pdf", usuarioStr, dataInicioStr, dataFimStr, dataHoraStr);
+
+	            StreamResource resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
+	            resource.setContentType("application/pdf");
+
+	            Anchor downloadLink = new Anchor(resource, "Clique aqui para baixar o PDF");
+	            downloadLink.getElement().setAttribute("download", true);
+	            downloadLink.getStyle().set("margin-top", "15px");
+	            downloadLink.getStyle().set("display", "block");
+	            downloadLink.getStyle().set("text-align", "center");
+
+	            pdfDownloadContainer.removeAll();
+	            pdfDownloadContainer.add(downloadLink);
+
+	        } catch (Exception ex) {
+	            Notification.show("Erro ao gerar PDF: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+	            ex.printStackTrace();
+	        }
+	    });
+
+	    Button fechar = new Button("Fechar", e -> dialog.close());
+
+	    HorizontalLayout botoes = new HorizontalLayout(gerar, gerarPDF, fechar);
+
+	    layout.add(titulo, dataInicial, dataFinal, comboUsuario, botoes, pdfDownloadContainer, grid);
+	    dialog.add(layout);
+	    dialog.open();
+	}
 
     private void gerarComissoes() {
         Dialog dialog = new Dialog();

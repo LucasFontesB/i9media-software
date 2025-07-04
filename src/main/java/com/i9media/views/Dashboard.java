@@ -92,6 +92,18 @@ public abstract class Dashboard extends VerticalLayout implements BeforeEnterObs
         rightSection.setAlignItems(Alignment.CENTER);
         rightSection.setSpacing(true);
         
+        if ("ADM".equalsIgnoreCase(user.getDepartamento())) {
+            Button btnDashboardAdm = new Button("Dashboard ADM", e -> {
+                UI.getCurrent().navigate("dashboard-adm");
+            });
+            btnDashboardAdm.getElement().getStyle()
+                .set("background-color", "#ffffff")
+                .set("color", "#F97316")
+                .set("font-weight", "bold")
+                .set("border-radius", "4px");
+            rightSection.add(btnDashboardAdm);
+        }
+        
         String caminhoFoto = "/images/usuarios/" + user.getUsuario() + ".png";
         Image fotoExecutivo = new Image(caminhoFoto, "Foto do Executivo");
         fotoExecutivo.setWidth("32px");

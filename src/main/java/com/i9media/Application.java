@@ -1,5 +1,7 @@
 package com.i9media;
 
+import java.util.Locale;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -14,6 +16,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
     public static void main(String[] args) {
+    	Locale.setDefault(Locale.of("pt", "BR"));
+        
+        System.out.println("Locale atual: " + Locale.getDefault());
         SpringApplication.run(Application.class, args);
     }
 }

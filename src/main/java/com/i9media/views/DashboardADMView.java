@@ -144,6 +144,48 @@ public class DashboardADMView extends Dashboard {
         });
 
         Button btnRelatorios = new Button("Gerar Relatórios", e -> new GerarRelatoriosDialog().open());
+        
+        btnOpec.getStyle()
+        	.set("background-color", "#f97316")
+        	.set("color", "white");
+        btnOpec.getElement().getStyle()
+        	.set("cursor", "pointer")
+        	.set("font-weight", "bold");
+        
+        btnPlanejamento.getStyle()
+    		.set("background-color", "#f97316")
+    		.set("color", "white");
+        btnPlanejamento.getElement().getStyle()
+    		.set("cursor", "pointer")
+    		.set("font-weight", "bold");
+        
+        btnFinanceiro.getStyle()
+			.set("background-color", "#f97316")
+			.set("color", "white");
+        btnFinanceiro.getElement().getStyle()
+			.set("cursor", "pointer")
+			.set("font-weight", "bold");
+        
+        btnExecutivo.getStyle()
+			.set("background-color", "#f97316")
+			.set("color", "white");
+        btnExecutivo.getElement().getStyle()
+			.set("cursor", "pointer")
+			.set("font-weight", "bold");
+        
+        cadastrar.getStyle()
+			.set("background-color", "#f97316")
+			.set("color", "white");
+        cadastrar.getElement().getStyle()
+			.set("cursor", "pointer")
+			.set("font-weight", "bold");
+        
+        btnRelatorios.getStyle()
+			.set("background-color", "#f97316")
+			.set("color", "white");
+        btnRelatorios.getElement().getStyle()
+			.set("cursor", "pointer")
+			.set("font-weight", "bold");
 
         for (Button btn : new Button[]{btnOpec, btnPlanejamento, btnFinanceiro, btnExecutivo, btnRelatorios, cadastrar}) {
             btn.setWidthFull();
