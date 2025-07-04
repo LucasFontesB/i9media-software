@@ -9,10 +9,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Push
 @Theme(value = "i9media")
-@PWA(
+/*@PWA(
 	    name = "Sistema de Mídia",
 	    shortName = "Midia",
 	    iconPath = "icons/favicon.ico"
-	)
+	)*/
 public class AppShellConfig implements AppShellConfigurator {
 }

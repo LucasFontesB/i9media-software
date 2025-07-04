@@ -203,7 +203,7 @@ public class CriarUsuarioDialog extends Dialog {
         if (sucessoUser) {
             if (buffer != null && buffer.getFileName() != null && !buffer.getFileName().isBlank()) {
                 String nomeBase = usuarioField.getValue();
-                Path pastaDestino = Paths.get("src/main/resources/META-INF/resources/images/usuarios");
+                Path pastaDestino = Paths.get("/opt/app/images/usuarios");
 
                 try {
                     if (Files.notExists(pastaDestino)) {

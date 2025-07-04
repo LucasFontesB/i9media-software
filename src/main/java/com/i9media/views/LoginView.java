@@ -24,7 +24,7 @@ import com.i9media.NavegadorDashboards;
 import com.i9media.SessaoUsuario;
 
 @PageTitle("I9Media - Login")
-@Route("")
+@Route("login")
 public class LoginView extends HorizontalLayout {
 
     public LoginView() {
