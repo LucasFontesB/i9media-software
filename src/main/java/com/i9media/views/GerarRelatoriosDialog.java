@@ -455,12 +455,34 @@ public class GerarRelatoriosDialog extends Dialog {
                     );
                 }
 
+                String mesNome = comboMes.getValue(); 
+                Integer anoBusca1 = LocalDate.now().getYear(); 
+                
+                LocalDate inicio = dataInicial.getValue();
+                LocalDate fim = dataFinal.getValue();
+
                 LocalDateTime agora = LocalDateTime.now();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
-
                 String dataHoraFormatada = agora.format(formatter);
+
                 String tipo = detalhado ? "detalhado" : "resumido";
-                String nomeArquivo = String.format("relatorio-%s--%02d-%d--%s.pdf", tipo, mes, ano, dataHoraFormatada);
+                String usuarioStr = selecionado.getNome().toLowerCase().replaceAll("\\s+", "-");
+
+                String periodoStr;
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyy");
+
+                if (inicio != null && fim != null) {
+                    // período com datas definidas
+                    periodoStr = inicio.format(dtf) + "-a-" + fim.format(dtf);
+                } else if (mesNome != null && anoBusca1 != null) {
+                    // filtro por mês e ano
+                    periodoStr = String.format("%02d-%d", mes, ano);
+                } else {
+                    // sem filtro válido, usar "periodo-desconhecido"
+                    periodoStr = "periodo-desconhecido";
+                }
+
+                String nomeArquivo = String.format("relatorio-%s-%s-%s-%s.pdf", tipo, usuarioStr, periodoStr, dataHoraFormatada);
                 StreamResource resource = new StreamResource(nomeArquivo, () -> new ByteArrayInputStream(pdfBytes));
                 resource.setContentType("application/pdf");
                 

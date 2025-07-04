@@ -508,10 +508,7 @@ public class AdicionarPI extends Dialog {
         pi.setPiAgencia(piAgenciaStr != null ? piAgenciaStr.trim() : null);
         pi.setNfVeiculo(nfVeiculoStr != null ? nfVeiculoStr.trim() : null);
 
-        if (piI9Str != null && !piI9Str.trim().isEmpty()) {
-            pi.setPiI9Id(Integer.parseInt(piI9Str.trim()));
-        }
-
+        pi.setPiI9Id(piI9Str);
         pi.setVencimentopiAgencia(toDate(vencimentoPI));
         pi.setCheckingEnviado(toDate(checkingDate));
         pi.setDataPagamentoParaVeiculo(toDate(dataPagamento));

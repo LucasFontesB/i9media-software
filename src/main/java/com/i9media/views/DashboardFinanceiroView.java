@@ -7,7 +7,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
+import com.vaadin.flow.shared.Registration;
 import com.i9media.models.*;
 import com.i9media.utils.DateUtils;
 import com.i9media.utils.PIUpdateBroadcaster;
@@ -43,6 +43,7 @@ public class DashboardFinanceiroView extends Dashboard {
 
     private Grid<PedidoInsercao> gridPagar;
     private Grid<PedidoInsercao> gridReceber;
+    private Registration broadcasterRegistration;
 
     private Timer timer;
 
@@ -368,21 +369,21 @@ public class DashboardFinanceiroView extends Dashboard {
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
-        PIUpdateBroadcaster.register(attachEvent.getUI());
-    }
-
-    private String formatarMoeda(BigDecimal valor) {
-        if (valor == null) return "R$ 0,00";
-        return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
+        broadcasterRegistration = PIUpdateBroadcaster.register(attachEvent.getUI(), this::atualizarTudo);
     }
 
     @Override
     protected void onDetach(DetachEvent detachEvent) {
         super.onDetach(detachEvent);
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
+        if (broadcasterRegistration != null) {
+            broadcasterRegistration.remove();
+            broadcasterRegistration = null;
         }
+    }
+
+    private String formatarMoeda(BigDecimal valor) {
+        if (valor == null) return "R$ 0,00";
+        return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
     }
 
     @Override

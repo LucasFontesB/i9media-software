@@ -123,26 +123,29 @@ public class PDFUtils {
 		NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
 		boolean linhaCor = false;
+		Font conteudoFont = new Font(Font.HELVETICA, 9, Font.NORMAL, Color.BLACK);
+
 		for (ComissaoEspecialDTO c : comissoesFiltradas) {
-			Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
-			PdfPCell cellNome = new PdfPCell(new Phrase(c.getNome()));
-			cellNome.setBackgroundColor(bgColor);
-			cellNome.setPadding(6);
-			table.addCell(cellNome);
+		    Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
 
-			PdfPCell cellPercentual = new PdfPCell(new Phrase(String.format("%.2f%%", c.getPercentual())));
-			cellPercentual.setHorizontalAlignment(Element.ALIGN_RIGHT);
-			cellPercentual.setBackgroundColor(bgColor);
-			cellPercentual.setPadding(6);
-			table.addCell(cellPercentual);
+		    PdfPCell cellNome = new PdfPCell(new Phrase(c.getNome(), conteudoFont));
+		    cellNome.setBackgroundColor(bgColor);
+		    cellNome.setPadding(6);
+		    table.addCell(cellNome);
 
-			PdfPCell cellValor = new PdfPCell(new Phrase(currencyFormat.format(c.getValor())));
-			cellValor.setHorizontalAlignment(Element.ALIGN_RIGHT);
-			cellValor.setBackgroundColor(bgColor);
-			cellValor.setPadding(6);
-			table.addCell(cellValor);
+		    PdfPCell cellPercentual = new PdfPCell(new Phrase(String.format("%.2f%%", c.getPercentual()), conteudoFont));
+		    cellPercentual.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		    cellPercentual.setBackgroundColor(bgColor);
+		    cellPercentual.setPadding(6);
+		    table.addCell(cellPercentual);
 
-			linhaCor = !linhaCor;
+		    PdfPCell cellValor = new PdfPCell(new Phrase(currencyFormat.format(c.getValor()), conteudoFont));
+		    cellValor.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		    cellValor.setBackgroundColor(bgColor);
+		    cellValor.setPadding(6);
+		    table.addCell(cellValor);
+
+		    linhaCor = !linhaCor;
 		}
 
 		document.add(table);
@@ -225,23 +228,32 @@ public class PDFUtils {
 	    currencyFormat.setRoundingMode(RoundingMode.HALF_UP);
 
 	    boolean linhaCor = false;
+	    Font conteudoFont = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.BLACK);
+
 	    for (ContaReceberDTO c : contas) {
 	        Color bgColor = linhaCor ? laranjaClaro : Color.WHITE;
 
-	        PdfPCell clienteCell = new PdfPCell(new Phrase(c.getCliente()));
+	        PdfPCell clienteCell = new PdfPCell(new Phrase(c.getCliente(), conteudoFont));
 	        clienteCell.setBackgroundColor(bgColor);
+	        clienteCell.setPadding(6);
 	        table.addCell(clienteCell);
 
-	        PdfPCell valorCell = new PdfPCell(new Phrase(currencyFormat.format(c.getValor())));
+	        PdfPCell valorCell = new PdfPCell(new Phrase(currencyFormat.format(c.getValor()), conteudoFont));
 	        valorCell.setBackgroundColor(bgColor);
+	        valorCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+	        valorCell.setPadding(6);
 	        table.addCell(valorCell);
 
-	        PdfPCell dataCell = new PdfPCell(new Phrase(c.getDataVencimento().format(dtf)));
+	        PdfPCell dataCell = new PdfPCell(new Phrase(c.getDataVencimento().format(dtf), conteudoFont));
 	        dataCell.setBackgroundColor(bgColor);
+	        dataCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+	        dataCell.setPadding(6);
 	        table.addCell(dataCell);
 
-	        PdfPCell statusCell = new PdfPCell(new Phrase(c.getStatus()));
+	        PdfPCell statusCell = new PdfPCell(new Phrase(c.getStatus(), conteudoFont));
 	        statusCell.setBackgroundColor(bgColor);
+	        statusCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+	        statusCell.setPadding(6);
 	        table.addCell(statusCell);
 
 	        linhaCor = !linhaCor;
@@ -502,7 +514,7 @@ public class PDFUtils {
     }
 
     private static PdfPCell criarCelula(String texto, Color background) {
-        Font font = new Font(Font.HELVETICA, 11, Font.NORMAL, Color.BLACK);
+        Font font = new Font(Font.HELVETICA, 9, Font.NORMAL, Color.BLACK);
         PdfPCell cell = new PdfPCell(new Phrase(texto, font));
         cell.setBackgroundColor(background);
         cell.setPadding(6);

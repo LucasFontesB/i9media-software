@@ -14,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.AttachEvent;
 
@@ -36,6 +37,7 @@ public class DashboardPlanejamentoView extends Dashboard{
     private String nomeAgencia;
     private String nomeExecutivo;
     private CardComponent cardTotalPIs;
+    private Registration broadcasterRegistration;
 	
 	public DashboardPlanejamentoView() {
         super();
@@ -153,9 +155,10 @@ public class DashboardPlanejamentoView extends Dashboard{
 	@Override
 	protected void onAttach(AttachEvent attachEvent) {
 	    super.onAttach(attachEvent);
-	    PIUpdateBroadcaster.register(attachEvent.getUI());
-	    atualizarGrid();
+	    broadcasterRegistration = PIUpdateBroadcaster.register(attachEvent.getUI(), this::atualizarGrid);
+	    atualizarGrid(); 
 	}
+
 	
 	public void atualizarCard() {
 	    int novoTotal = PedidoInsercao.buscarTodos().size();
@@ -179,6 +182,10 @@ public class DashboardPlanejamentoView extends Dashboard{
 	    if (timer != null) {
 	        timer.cancel();
 	        timer = null;
+	    }
+	    if (broadcasterRegistration != null) {
+	        broadcasterRegistration.remove();
+	        broadcasterRegistration = null;
 	    }
 	}
 

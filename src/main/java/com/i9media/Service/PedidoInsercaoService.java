@@ -141,7 +141,7 @@ public class PedidoInsercaoService {
             }
 
             if (pi.getPiI9Id() != null) {
-                stmt.setInt(21, pi.getPiI9Id());
+                stmt.setString(21, pi.getPiI9Id());
             } else {
                 stmt.setNull(21, Types.INTEGER);
             }

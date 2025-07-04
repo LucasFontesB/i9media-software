@@ -40,7 +40,7 @@ public class PIDTO {
     private String piAgencia;
     private Date vencimentopiAgencia;
     private Date checkingEnviado;
-    private Integer piI9Id;
+    private String piI9Id;
     private Date dataPagamentoParaVeiculo;
     private String nfVeiculo;
     
@@ -423,11 +423,11 @@ public class PIDTO {
         this.checkingEnviado = date;
     }
 
-    public Integer getPiI9Id() {
+    public String getPiI9Id() {
         return piI9Id;
     }
 
-    public void setPiI9Id(Integer piI9Id) {
+    public void setPiI9Id(String piI9Id) {
         this.piI9Id = piI9Id;
     }
 

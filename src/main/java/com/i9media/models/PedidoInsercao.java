@@ -47,7 +47,7 @@ public class PedidoInsercao {
     private String piAgencia; 
     private Date vencimentopiAgencia;
     private Date checkingEnviado;
-    private Integer piI9Id; 
+    private String piI9Id; 
     private Date dataPagamentoParaVeiculo;
     private String nfVeiculo;
     
@@ -206,8 +206,8 @@ public class PedidoInsercao {
     public Date getCheckingEnviado() { return checkingEnviado; }
     public void setCheckingEnviado(Date checkingEnviado) { this.checkingEnviado = checkingEnviado; }
 
-    public Integer getPiI9Id() { return piI9Id; }
-    public void setPiI9Id(Integer piI9Id) { this.piI9Id = piI9Id; }
+    public String getPiI9Id() { return piI9Id; }
+    public void setPiI9Id(String piI9Id) { this.piI9Id = piI9Id; }
 
     public Date getDataPagamentoParaVeiculo() { return dataPagamentoParaVeiculo; }
     public void setDataPagamentoParaVeiculo(Date dataPagamentoParaVeiculo) { this.dataPagamentoParaVeiculo = dataPagamentoParaVeiculo; }
@@ -303,7 +303,7 @@ public class PedidoInsercao {
         pi.setPiAgencia(rs.getString("piAgencia"));
         pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
         pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
-        pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
+        pi.setPiI9Id(rs.getString("piI9_id")); 
         pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
         pi.setNfVeiculo(rs.getString("nfVeiculo"));
         pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
@@ -383,7 +383,7 @@ public class PedidoInsercao {
                 pi.setPiAgencia(rs.getString("piAgencia"));
                 pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
                 pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
-                pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
+                pi.setPiI9Id(rs.getString("piI9_id")); 
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
@@ -474,7 +474,7 @@ public class PedidoInsercao {
                 pi.setPiAgencia(rs.getString("piAgencia"));
                 pi.setVencimentopiAgencia(rs.getDate("vencimentopiAgencia"));
                 pi.setCheckingEnviado(rs.getDate("checkingEnviado"));
-                pi.setPiI9Id(rs.getObject("piI9_id", Integer.class)); 
+                pi.setPiI9Id(rs.getString("piI9_id"));  
                 pi.setDataPagamentoParaVeiculo(rs.getDate("dataPagamentoParaVeiculo"));
                 pi.setNfVeiculo(rs.getString("nfVeiculo"));
                 pi.setEmEdicaoPor(rs.getString("em_edicao_por"));
@@ -587,7 +587,7 @@ public class PedidoInsercao {
             stmt.setDate(20, this.vencimentopiAgencia != null ? new java.sql.Date(this.vencimentopiAgencia.getTime()) : null);
             stmt.setDate(21, this.checkingEnviado != null ? new java.sql.Date(this.checkingEnviado.getTime()) : null);
             if (this.piI9Id != null) {
-                stmt.setInt(22, this.piI9Id);
+                stmt.setString(22, this.piI9Id);
             } else {
                 stmt.setNull(22, java.sql.Types.INTEGER);
             }

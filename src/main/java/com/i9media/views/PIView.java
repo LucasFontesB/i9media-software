@@ -5,6 +5,7 @@ import com.i9media.models.*;
 import com.i9media.utils.PIUpdateBroadcaster;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -22,6 +23,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 
@@ -88,9 +90,9 @@ public class PIView extends Dialog {
     private Button deletarButton = new Button("🗑️ Deletar");
 
     private final Binder<PIDTO> binder = new Binder<>(PIDTO.class);
-    private final PIDTO original;
-    
-    private final Runnable atualizarCardCallback;
+    private PIDTO original;
+    private Registration broadcasterRegistration;
+   
 
     public PIView(PIDTO pi, Runnable atualizarCardCallback) throws SQLException {
     	
@@ -104,9 +106,11 @@ public class PIView extends Dialog {
     		    deletarButton.setVisible(false);
     		}
     	
+    	
+    	
     	addDetachListener(event -> {
     	    try {
-    	        Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
+    	        
     	        if (usuarioLogado != null && usuarioLogado.getUsuario().equals(pi.getEmEdicaoPor())) {
     	            PedidoInsercaoService.liberarBloqueio(pi.getId());
     	            System.out.println("PI desbloqueado ao fechar a janela.");
@@ -119,7 +123,7 @@ public class PIView extends Dialog {
     	
     	binder.setBean(pi);
         this.original = new PIDTO(pi);
-        this.atualizarCardCallback = atualizarCardCallback;
+        verificarBloqueio();
         System.out.println("Id PI Aberto: "+pi.getId());
         Usuario usuarioLogado = (Usuario) VaadinSession.getCurrent().getAttribute("usuario");
         Boolean estaBloqueado = PedidoInsercaoService.piEstaBloqueado(pi, usuarioLogado.getUsuario());
@@ -127,26 +131,17 @@ public class PIView extends Dialog {
         System.out.println("Em edição por: " + pi.getEmEdicaoPor());
         System.out.println("Usuário atual: " + usuarioLogado.getUsuario());
 
-        if (estaBloqueado) {
-            if (usuarioLogado.getUsuario().equals(pi.getEmEdicaoPor())) {
-                Notification.show("Você está editando este PI.");
-                setReadOnly(false);
-                editarButton.setEnabled(false);
-                salvarButton.setEnabled(true);
-            } else {
-                Notification.show("Este PI está sendo editado por outro usuário.");
-                setReadOnly(true);
-                editarButton.setEnabled(false);
-                salvarButton.setEnabled(false);
-                deletarButton.setEnabled(false);
-            }
-        } else {
-            Notification.show("Este PI não está em edição.");
-            setReadOnly(true);
-            editarButton.setEnabled(true);
-            salvarButton.setEnabled(false);
-            deletarButton.setEnabled(true);
-        }
+        
+        
+        
+        /*broadcasterRegistration = PIUpdateBroadcaster.register(UI.getCurrent(), () -> {
+			try {
+				verificarBloqueio();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		});*/
         
         clienteField.setItems(Cliente.buscarTodosNomes());
         clienteField.setItemLabelGenerator(Cliente::getNome);
@@ -247,20 +242,7 @@ public class PIView extends Dialog {
         
 
         binder.forField(piI9Id)
-        .withConverter(
-                str -> {
-                    if (str == null || str.trim().isEmpty()) {
-                        return null;
-                    }
-                    try {
-                        return Integer.parseInt(str);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("Valor inválido. Use apenas números.");
-                    }
-                },
-                intValue -> intValue == null ? "" : intValue.toString()
-            )
-            .bind(PIDTO::getPiI9Id, PIDTO::setPiI9Id);
+        .bind(PIDTO::getPiI9Id, PIDTO::setPiI9Id);
         binder.forField(dataPagamentoParaVeiculo).bind(
                 piDto -> toLocalDate(piDto.getDataPagamentoParaVeiculo()),
                 (piDto, value) -> piDto.setDataPagamentoParaVeiculo(toDate(value)));
@@ -354,7 +336,7 @@ public class PIView extends Dialog {
         });
 
         editarButton.addClickListener(e -> {
-            try {
+        	try {
                 boolean bloqueado = PedidoInsercaoService.tentarBloquearParaEdicao(pi.getId(), usuarioLogado.getUsuario());
 
                 if (atualizarCardCallback != null) {
@@ -593,9 +575,9 @@ public class PIView extends Dialog {
     }
     
     private void atualizarCamposCalculados() {
-        if (totalLiquido.getValue() == null) return;
+        if (valorLiquido.getValue() == null) return;  // usa valorLiquido, não totalLiquido
 
-        BigDecimal valorLiquido = BigDecimal.valueOf(totalLiquido.getValue());
+        BigDecimal valorLiquidoBD = BigDecimal.valueOf(valorLiquido.getValue());
         BigDecimal repasse = repasseVeiculo.getValue() != null
             ? BigDecimal.valueOf(repasseVeiculo.getValue()) : BigDecimal.ZERO;
         BigDecimal comissao = valorComissao.getValue() != null
@@ -609,10 +591,10 @@ public class PIView extends Dialog {
             ? BigDecimal.valueOf(porcBV.getValue()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-        BigDecimal valorImposto = valorLiquido.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal valorBV = valorLiquido.multiply(bvDecimal).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal valorImposto = valorLiquidoBD.multiply(impostoDecimal).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal valorBV = valorLiquidoBD.multiply(bvDecimal).setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal total = valorLiquido
+        BigDecimal total = valorLiquidoBD
             .subtract(repasse)
             .subtract(valorImposto)
             .subtract(valorBV)
@@ -665,6 +647,27 @@ public class PIView extends Dialog {
         }
 
         executivoField.setValue(executivoResponsavel);
+    }
+    
+    private void verificarBloqueio() throws SQLException {
+    	PedidoInsercao pinovo = PedidoInsercao.buscarPorId(original.getId());
+    	PIDTO pidtonovo = PIDTO.convertToDTO(pinovo);
+    	boolean bloqueado = PedidoInsercaoService.piEstaBloqueado(pidtonovo, usuarioLogado.getUsuario());
+
+
+		if (!bloqueado) {
+			pidtonovo.setEmEdicaoPor(usuarioLogado.getUsuario());
+
+		    Notification.show("PI bloqueado com sucesso. Você pode editar.");
+		    setReadOnly(true);
+		    salvarButton.setEnabled(true);
+		    editarButton.setEnabled(false);
+		    PIUpdateBroadcaster.broadcast();
+		} else {
+		    Notification.show("Este PI está sendo editado por outro usuário.");
+		    setReadOnly(true);
+		    editarButton.setEnabled(false);
+		}
     }
     
 

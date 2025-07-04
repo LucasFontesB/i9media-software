@@ -19,6 +19,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.AttachEvent;
@@ -39,6 +40,7 @@ public class DashboardOpecView extends Dashboard{
 	private Grid<PedidoInsercao> grid = new Grid<>();
     private Timer timer;
     private CardComponent cardTotalPIs;
+    private Registration broadcasterRegistration;
 	
 	public DashboardOpecView() {
         super();
@@ -190,8 +192,8 @@ public class DashboardOpecView extends Dashboard{
 	@Override
 	protected void onAttach(AttachEvent attachEvent) {
 	    super.onAttach(attachEvent);
-	    PIUpdateBroadcaster.register(attachEvent.getUI());
-	    atualizarGrid();
+	    broadcasterRegistration = PIUpdateBroadcaster.register(attachEvent.getUI(), this::atualizarGrid);
+	    atualizarGrid();  // para atualizar ao abrir a tela
 	}
 	
 	public void atualizarCard() {
@@ -216,6 +218,10 @@ public class DashboardOpecView extends Dashboard{
 	    if (timer != null) {
 	        timer.cancel();
 	        timer = null;
+	    }
+	    if (broadcasterRegistration != null) {
+	        broadcasterRegistration.remove();
+	        broadcasterRegistration = null;
 	    }
 	}
 
